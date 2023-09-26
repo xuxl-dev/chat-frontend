@@ -25,6 +25,17 @@ onMounted(() => {
   }
 })
 
+// idlecallback
+const idleCallback = (cb: () => void) => {
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(cb)
+  } else {
+    setTimeout(cb, 0)
+  }
+}
+
+//TODO: load chats in chunks, and only when idle
+
 </script>
 
 <style scoped>
