@@ -1,7 +1,7 @@
 <template>
   <div class="chat-message">
     <div class="avatar">
-      <!-- <el-avatar :src="message.senderAvatar" :alt="message.senderName"></el-avatar> -->
+      <ElAvatar :src="message.senderAvatar" :alt="message.senderName"></ElAvatar>
       avatar
     </div>
     <div class="message-content">
@@ -10,7 +10,7 @@
     </div>
     <div class="message-status">
       <div class="read-receipt">
-        <!-- <el-icon v-if="message.read" name="check"></el-icon> -->
+        <el-icon v-if="message.read" name="check"></el-icon>
         icon
       </div>
       <div class="read-count" v-if="message.group">
@@ -32,6 +32,7 @@ const props = defineProps({
 });
 
 const message = ref(props.message);
+
 </script>
 
 <style scoped>
