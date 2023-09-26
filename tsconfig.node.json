@@ -4,6 +4,8 @@
   "compilerOptions": {
     "composite": true,
     "module": "ESNext",
-    "types": ["node", "element-plus/global"]
+    "types": ["node", "element-plus/global"],
+    "allowUnusedLabels": true,
+    "strictPropertyInitialization": false
   }
 }

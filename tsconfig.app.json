@@ -9,6 +9,8 @@
       "@/*": ["./src/*"]
     },
     "moduleResolution": "Node",
-    "types": ["element-plus/global"]
+    "types": ["element-plus/global"],
+    "allowUnusedLabels": true,
+    "strictPropertyInitialization": false
   }
 }
