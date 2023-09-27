@@ -8,18 +8,16 @@
       <div class="message-text">{{ message.text ?? '<None>' }}</div>
     </div>
     <div class="message-status">
-      <div class="read-receipt">
+      <div class="receipt" :class="message.read ? 'read' : 'sent'">
         <el-icon v-if="message.read" name="check">
           <Check />
         </el-icon>
         <el-icon v-else name="check-empty">
           <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
             <path fill="currentColor"
-              d="M 406.656 706.944 L 195.84 496.256 C 150.735 541.52 195.928 496.351 150.592 541.504 L 406.592 797.504 L 914.812 290.84 C 882.028 290.84 884.394 290.508 857.335 290.508 L 406.592 706.944 L 406.656 706.944 Z"
-              transform="matrix(0.9999999999999999, 0, 0, 0.9999999999999999, 0, 0)" />
+              d="M 341.656 706.944 L 130.84 496.256 C 85.735 541.52 130.928 496.351 85.592 541.504 L 341.592 797.504 L 849.812 290.84 C 817.028 290.84 819.394 290.508 792.335 290.508 L 341.592 706.944 L 341.656 706.944 Z" />
             <path fill="currentColor"
-              d="M 926.48 291.029 L 416.687 798.727 C 437.97 798.727 470.174 797.737 470.174 797.737 L 978.018 292.144 C 963.923 292.144 945.08 291.029 926.48 291.029 Z"
-              transform="matrix(0.9999999999999999, 0, 0, 0.9999999999999999, 0, 0)" />
+              d="M 965.48 291.029 L 455.687 798.727 C 476.97 798.727 509.174 797.737 509.174 797.737 L 1017.018 292.144 C 1002.923 292.144 984.08 291.029 965.48 291.029 Z" />
           </svg>
         </el-icon>
       </div>
@@ -61,7 +59,7 @@ const message = ref(props.message);
 
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .chat-message {
   display: flex;
   align-items: center;
@@ -86,12 +84,26 @@ const message = ref(props.message);
   align-items: flex-end;
 }
 
-.read-receipt {
-  color: #4caf50;
-  /* 已读回执颜色 */
+
+
+$receipt-color: #72eda7;
+$read-color: #4caf50;
+$font-size: 24px;
+
+.receipt {
+  &.sent, &.read {
+    color: $receipt-color;
+    font-size: $font-size;
+  }
+
+  &.read {
+    color: $read-color;
+  }
 }
+
 
 .read-count {
   font-size: 12px;
   color: #888;
-}</style>
+}
+</style>
