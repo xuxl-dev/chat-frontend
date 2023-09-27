@@ -20,21 +20,34 @@ const items = ref<Message[]>([] as any)
 
 const genChatCount = 100
 onMounted(() => {
+  const msgs = []
   for (let id = 0; id < genChatCount; id++) {
-    items.value.push(new Message(id, `sender ${id%10}`, `avatar ${id%10}`, `message ${id}`, id%2===0, id%3===0, id%7))
+    msgs.push(new Message(id, `sender ${id % 10}`, `avatar ${id % 10}`, `message ${id}`, id % 2 === 0, id % 3 === 0, id % 7))
   }
+  runChunked((chunk: Message[]) => {
+    items.value.push(...chunk)
+  }, msgs, 10)
 })
 
 // idlecallback
-const idleCallback = (cb: () => void) => {
-  if ('requestIdleCallback' in window) {
-    window.requestIdleCallback(cb)
-  } else {
-    setTimeout(cb, 0)
-  }
-}
+const idleCallback = globalThis.requestIdleCallback
 
 //TODO: load chats in chunks, and only when idle
+
+function runChunked(task: Function, data: any[], chunkSize: number) {
+  function _run() {
+    idleCallback(idle => {
+      if (idle.timeRemaining() > 0) {
+        const chunk = data.splice(0, chunkSize)
+        task(chunk)
+        if (data.length > 0) {
+          _run()
+        }
+      }
+    })
+  }
+  _run()
+}
 
 </script>
 
