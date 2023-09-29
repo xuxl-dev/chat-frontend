@@ -4,8 +4,8 @@
       <template v-slot="{ item, index, active }">
         <DynamicScrollerItem :item="item" :active="active" :size-dependencies="[
           item.message,
-        ]" :data-index="index">
-          <ChatMessageDisplay :message="item" />
+        ]" :data-index="index" :key="index">
+          <ChatMessageDisplay :message="item" :reversed="item.read"/>
         </DynamicScrollerItem>
       </template>
     </DynamicScroller>
@@ -53,7 +53,7 @@ function runChunked(task: Function, data: any[], chunkSize: number) {
 
 <style scoped>
 .scroller {
-  height: 70vh;
+  height: 100%;
 }
 
 /* width */
