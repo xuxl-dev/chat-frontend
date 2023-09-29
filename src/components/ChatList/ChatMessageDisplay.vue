@@ -1,29 +1,38 @@
 <template>
-  <div class="chat-message">
-    <div class="avatar">
+  <div class="chat-message flex items-end pb-4 pt-5" :class="$props.reversed ? 'reversed' : 'normal'">
+    <div class="avatar mb-6">
       <ElAvatar :src="message.senderAvatar" :alt="message.senderName"></ElAvatar>
     </div>
-    <div class="message-content">
-      <div class="sender-name">{{ message.senderName ?? '<Annormous>' }}</div>
-      <div class="message-text">{{ message.text ?? '<None>' }}</div>
+    <div class="message-body break-all" :class="$props.reversed ? 'reversed' : 'normal'">
+      <!-- <div class="message-content flex flex-col" :class="!$props.reversed ? 'items-start' : 'items-end'">
+        <div class="sender-name">{{ message.senderName ?? '<Annormous>' }}</div>
+        <div class="message-text">{{ message.text ?? '<None>' }}</div>
+      </div> -->
+      Lorem ipsum dolor sit amet consectetur adipisicing elit. Dolor expedita neque libero architecto nesciunt quod?
+      Corrupti suscipit eaque explicabo numquam beatae nesciunt enim rem iste, molestias dolorum qui odit ex.
+      <div class="float-right">
+        <div class="flex flex-col items-end">
+          <div class="receipt flex flex-row items-end" :class="message.read ? 'read' : 'sent'">
+            <el-icon v-if="message.read" name="check">
+              <Check />
+            </el-icon>
+            <el-icon v-else name="check-empty">
+              <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+                <path fill="currentColor"
+                  d="M 341.656 706.944 L 130.84 496.256 C 85.735 541.52 130.928 496.351 85.592 541.504 L 341.592 797.504 L 849.812 290.84 C 817.028 290.84 819.394 290.508 792.335 290.508 L 341.592 706.944 L 341.656 706.944 Z" />
+                <path fill="currentColor"
+                  d="M 965.48 291.029 L 455.687 798.727 C 476.97 798.727 509.174 797.737 509.174 797.737 L 1017.018 292.144 C 1002.923 292.144 984.08 291.029 965.48 291.029 Z" />
+              </svg>
+            </el-icon>
+            <div class="read-count" v-if="message.group">
+              {{ message.readCount }}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="message-status">
-      <div class="receipt" :class="message.read ? 'read' : 'sent'">
-        <el-icon v-if="message.read" name="check">
-          <Check />
-        </el-icon>
-        <el-icon v-else name="check-empty">
-          <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
-            <path fill="currentColor"
-              d="M 341.656 706.944 L 130.84 496.256 C 85.735 541.52 130.928 496.351 85.592 541.504 L 341.592 797.504 L 849.812 290.84 C 817.028 290.84 819.394 290.508 792.335 290.508 L 341.592 706.944 L 341.656 706.944 Z" />
-            <path fill="currentColor"
-              d="M 965.48 291.029 L 455.687 798.727 C 476.97 798.727 509.174 797.737 509.174 797.737 L 1017.018 292.144 C 1002.923 292.144 984.08 291.029 965.48 291.029 Z" />
-          </svg>
-        </el-icon>
-      </div>
-      <div class="read-count" v-if="message.group">
-        {{ message.readCount }}
-      </div>
+    <div class="avatar">
+
     </div>
   </div>
 </template>
@@ -61,37 +70,55 @@ const message = ref(props.message);
 
 <style scoped lang="scss">
 .chat-message {
-  display: flex;
-  align-items: center;
-  margin-bottom: 10px;
+  &.reversed {
+    flex-direction: row-reverse;
+  }
+
+  &.normal {
+    flex-direction: row;
+  }
 }
 
-.avatar {
-  margin-right: 10px;
+.message-body {
+  max-width: 70%;
+
+  &.normal {
+    justify-content: left;
+    margin-left: 10px;
+  }
+
+  &.reversed {
+    justify-content: flex-start; // items are reversely arranged in the DOM flow
+    flex-direction: row-reverse;
+    margin-right: 10px;
+  }
 }
 
 .message-content {
-  flex-grow: 1;
+  &.normal {
+    justify-content: left;
+  }
+
+  &.reversed {
+    justify-content: flex-start; // items are reversely arranged in the DOM flow
+    flex-direction: row-reverse;
+  }
 }
 
-.sender-name {
-  font-weight: bold;
+.avatar {
+  // margin-right: 10px;
+  width: 40px;
+  height: 40px;
 }
-
-.message-status {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-}
-
-
 
 $receipt-color: #72eda7;
 $read-color: #4caf50;
 $font-size: 24px;
 
 .receipt {
-  &.sent, &.read {
+
+  &.sent,
+  &.read {
     color: $receipt-color;
     font-size: $font-size;
   }
