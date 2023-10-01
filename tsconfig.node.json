@@ -6,6 +6,8 @@
     "module": "ESNext",
     "types": ["node", "element-plus/global"],
     "allowUnusedLabels": true,
-    "strictPropertyInitialization": false
+    "strictPropertyInitialization": false,
+    "noEmit": true,
+    "allowImportingTsExtensions": true
   }
 }

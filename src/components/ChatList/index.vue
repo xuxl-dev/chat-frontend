@@ -1,31 +1,48 @@
 <template>
-  <div>
-    <DynamicScroller :items="items" :min-item-size="54" class="scroller">
-      <template v-slot="{ item, index, active }">
-        <DynamicScrollerItem :item="item" :active="active" :size-dependencies="[
-          item.message,
-        ]" :data-index="index" :key="index">
-          <ChatMessageDisplay :message="item" :reversed="item.read"/>
-        </DynamicScrollerItem>
-      </template>
-    </DynamicScroller>
+  <div class="relative m-4" sticky-container>
+    <VirtualList v-if="items?.length" dataPropName="message" :data="items" :data-key="getKey" :item="ChatMessageDisplay"
+      :size="20" class="scroller" />
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted } from 'vue'
-import { Message } from './ChatMessage';
+import { ref, onMounted } from 'vue'
+import { Message, mergeAdjacentMessages } from './ChatMessage';
 import ChatMessageDisplay from './ChatMessageDisplay.vue';
+import { randChat } from './randChatG';
+import VirtualList from './VirtualList/index.tsx';
 const items = ref<Message[]>([] as any)
-
 const genChatCount = 100
+const me = 'SenderA'
+const getKey = (item: Message) => item.id
+
 onMounted(() => {
-  const msgs = []
-  for (let id = 0; id < genChatCount; id++) {
-    msgs.push(new Message(id, `sender ${id % 10}`, `avatar ${id % 10}`, `message ${id}`, id % 2 === 0, id % 3 === 0, id % 7))
-  }
+  let msgs = randChat(genChatCount).map((m) => {
+    m['isSelfMessage'] = m.senderName === me
+    return m
+  })
+
+
+  msgs.forEach((message, index) => {
+    message.showAvatar = true; // always show avatar
+  });
+  // is self message, senderName === me
+  msgs.forEach((message, index) => {
+    if (message.senderName === me) {
+      message.isSelfMessage = true;
+    } else {
+      message.isSelfMessage = false;
+    }
+  });
+
+  msgs = mergeAdjacentMessages(msgs)
+  // freeze the array
+  msgs.forEach((m) => {
+    Object.freeze(m)
+  })
+
   runChunked((chunk: Message[]) => {
-    items.value.push(...chunk)
+    items.value = items.value.concat(chunk)
   }, msgs, 10)
 })
 
@@ -33,7 +50,6 @@ onMounted(() => {
 const idleCallback = globalThis.requestIdleCallback
 
 //TODO: load chats in chunks, and only when idle
-
 function runChunked(task: Function, data: any[], chunkSize: number) {
   function _run() {
     idleCallback(idle => {
@@ -42,6 +58,9 @@ function runChunked(task: Function, data: any[], chunkSize: number) {
         task(chunk)
         if (data.length > 0) {
           _run()
+        } else {
+          console.log(items.value);
+          console.log('done')
         }
       }
     })
@@ -53,7 +72,9 @@ function runChunked(task: Function, data: any[], chunkSize: number) {
 
 <style scoped>
 .scroller {
-  height: 100%;
+  max-height: 90vh;
+  padding-right: 2px;
+  overflow: auto;
 }
 
 /* width */
@@ -63,16 +84,16 @@ function runChunked(task: Function, data: any[], chunkSize: number) {
 
 /* Track */
 ::-webkit-scrollbar-track {
-  background: #f1f1f1; 
+  background: #f1f1f1;
 }
- 
+
 /* Handle */
 ::-webkit-scrollbar-thumb {
-  background: #888; 
+  background: #888;
 }
 
 /* Handle on hover */
 ::-webkit-scrollbar-thumb:hover {
-  background: #555; 
+  background: #555;
 }
 </style>
