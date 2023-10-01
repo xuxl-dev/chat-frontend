@@ -1,7 +1,7 @@
 <template>
-  <div style="height: 40vh;" class="relative m-4" sticky-container>
+  <div class="relative m-4" sticky-container>
     <VirtualList v-if="items?.length" dataPropName="message" :data="items" :data-key="getKey" :item="ChatMessageDisplay"
-      :size="20" :class="'scroller'" />
+      :size="20" class="scroller" />
   </div>
 </template>
 
@@ -36,6 +36,10 @@ onMounted(() => {
   });
 
   msgs = mergeAdjacentMessages(msgs)
+  // freeze the array
+  msgs.forEach((m) => {
+    Object.freeze(m)
+  })
 
   runChunked((chunk: Message[]) => {
     items.value = items.value.concat(chunk)
@@ -68,7 +72,7 @@ function runChunked(task: Function, data: any[], chunkSize: number) {
 
 <style scoped>
 .scroller {
-  max-height: 80vh;
+  max-height: 90vh;
   padding-right: 2px;
   overflow: auto;
 }

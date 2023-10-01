@@ -9,14 +9,24 @@
     }"></ElAvatar>
 
     <div class="message-body break-all ml-2 mr-2 whitespace-pre-wrap text-xl">
-      {{ message.texts.join('\n') }}
+      <!-- {{ message.texts.join('\n') }} -->
+      <div v-for="i in Math.max(0, message.texts.length - 2)" class="message-bubble-no-tail mt-1 mb-1" :class="{
+        'normal': !message.isSelfMessage,
+        'self': message.isSelfMessage,
+      }"> {{message.texts[i]}} </div>
+      <div :class="{
+        'my-message-bubble': message.isSelfMessage,
+        'message-bubble': !message.isSelfMessage,
+      }"> {{message.texts[message.texts.length - 1]}} </div>
       <div class="float-right">
         <div class="flex flex-col items-end">
           <div class="receipt flex flex-row items-center" :class="{
             sent: !message.read, //TODO: use message.sent
             read: message.read,
           }">
-            <div v-if="isSelfMessage">
+            <div :class="{
+              collapse: !isSelfMessage,
+            }">
               <el-icon v-if="message.read" name="check">
                 <Check />
               </el-icon>
@@ -76,7 +86,7 @@ onMounted(() => {
 
 .message-body {
   max-width: 70%;
-
+  padding: 0 4px;
   &.normal {
     justify-content: left;
     margin-left: 10px;
@@ -89,26 +99,17 @@ onMounted(() => {
   }
 }
 
-.message-content {
-  &.normal {
-    justify-content: left;
-  }
-
-  &.reversed {
-    justify-content: flex-start; // items are reversely arranged in the DOM flow
-    flex-direction: row-reverse;
-  }
-}
+$receipt-color: #72eda7;
+$read-color: #4caf50;
+$font-size: 24px;
 
 .avatar {
   // margin-right: 10px;
   width: 40px;
   height: 40px;
+  margin-bottom: $font-size + 4px;
 }
 
-$receipt-color: #72eda7;
-$read-color: #4caf50;
-$font-size: 24px;
 
 .receipt {
 
@@ -127,5 +128,65 @@ $font-size: 24px;
 .read-count {
   font-size: 12px;
   color: #888;
+}
+
+// 带尾巴的消息框样式
+.message-bubble {
+  background-color: #e0e0e0;
+  padding: 10px;
+  border-radius: 10px;
+  position: relative;
+  color: black;
+
+  &::before {
+    content: "";
+    position: absolute;
+    bottom: 0px;
+    left: -10px;
+    width: 0;
+    height: 0;
+    border-top: 10px solid transparent;
+    border-bottom: 10px solid transparent;
+    border-right: 10px solid #e0e0e0;
+    transform: translateY(-50%);
+  }
+}
+
+// 没有尾巴的消息框样式
+.message-bubble-no-tail {
+  color: black;
+  padding: 10px;
+  border-radius: 10px;
+
+  &.normal {
+    background-color: #e0e0e0;
+  }
+
+  &.self {
+    background-color: #007bff;
+    color: #fff;
+  }
+}
+
+// 自己发出的反向尾巴靠右的消息框样式
+.my-message-bubble {
+  background-color: #007bff;
+  padding: 10px;
+  border-radius: 10px;
+  color: #fff;
+  position: relative;
+
+  &::before {
+    content: "";
+    position: absolute;
+    right: -10px;
+    bottom: 0px;
+    width: 0;
+    height: 0;
+    border-top: 10px solid transparent;
+    border-bottom: 10px solid transparent;
+    border-left: 10px solid #007bff;
+    transform: translateY(-50%);
+  }
 }
 </style>
