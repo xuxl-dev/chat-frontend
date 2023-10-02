@@ -1,8 +1,6 @@
 <template>
-  <div class="relative m-4"
-       sticky-container>
-    <MsgList />
-  </div>
+  <MsgList class="scroller m-4"
+           ref="msglistRef" />
 </template>
 
 <script lang="ts" setup>
@@ -10,16 +8,26 @@ import { ref, onMounted } from 'vue'
 import { randChat } from './randChatG';
 import MsgList from './MsgList.vue';
 import useChatStore from '@/store/modules/chatStore';
-
-const { initMessages } = useChatStore()
+const msglistRef = ref<any | null>(null)
+const { initMessages, appendMessage } = useChatStore()
 const genChatCount = 100
-
 onMounted(() => {
-  let msgs = randChat(genChatCount)
-  msgs.forEach((m) => {
-    Object.freeze(m)
-  })
-  initMessages(msgs)
+  // let msgs = randChat(genChatCount)
+  // msgs.forEach((m) => {
+  //   Object.freeze(m)
+  // })
+  // initMessages(msgs)
+
+  const timer = setInterval(() => {
+    appendMessage(Object.freeze(randChat(1)[0]))
+    msglistRef.value?.scrollToBottom()
+  }, 20)
+
+  setTimeout(() => {
+    clearInterval(timer)
+    // msglistRef.value?.scrollToBottom()
+  }, 400)
+
 })
 
 // idlecallback
@@ -47,7 +55,7 @@ function runChunked(task: Function, data: any[], chunkSize: number) {
 
 <style scoped>
 .scroller {
-  max-height: 90vh;
+  max-height: 250px;
   padding-right: 2px;
   overflow: auto;
 }
