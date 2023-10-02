@@ -16,6 +16,7 @@ function randBetween(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1) + min);
 }
 
+
 export function randChat(count: number): Message[] {
   const messages: Message[] = [];
   for (let i = 0; i < count; i++) {
@@ -30,8 +31,4 @@ export function randChat(count: number): Message[] {
     ));
   }
   return messages;
-}
-
-export function randOneChat() {
-  return randChat(1)[0];
 }

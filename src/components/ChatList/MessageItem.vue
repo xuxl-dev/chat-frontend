@@ -1,18 +1,14 @@
 <template>
-  <div class="chat-message flex items-end pb-4 pt-5 h-full" :class="{
-    reversed: isSelfMessage,
-    normal: !isSelfMessage,
-  }">
-
-    <ElAvatar :src="message.senderAvatar" :alt="message.senderName" class="sticky bottom-0 avatar z-50" :class="{
-      collapsed: !message.showAvatar,
-    }"></ElAvatar>
+  <div class="chat-message flex items-end pb-4 pt-5 h-full ">
 
     <div class="message-body break-all ml-2 mr-2 whitespace-pre-wrap text-xl">
+      sentBy?.name:{{ sentBy?.name  }}
+      message.senderName: {{ message.senderName }}
       {{ message.text }}
+      
 
-      <div class="receipt flex flex-row items-center float-right">
-        <div :class="{
+      <div class="flex flex-row items-center float-right">
+        <div class="receipt" :class="{
           collapse: !isSelfMessage,
           sent: receipt === 'sent',
           read: receipt === 'read',
@@ -59,12 +55,12 @@ const props = defineProps({
     type: Boolean,
     required: false,
     default: true,
-  },
+  }
 });
 const msg = ref(props.message);
-const isSelfMessage = computed(() => props.message.isSelfMessage);
+const isSelfMessage = computed(() => props.sentBy?.name === msg.value.senderName);
 const receipt = computed(() => {
-  return 'sent'; //TODO implement this
+  return props.message.read ? 'read' : 'sent';
 });
 </script>
 <style scoped lang="scss">
@@ -101,14 +97,6 @@ const receipt = computed(() => {
 $receipt-color: #72eda7;
 $read-color: #4caf50;
 $font-size: 24px;
-
-.avatar {
-  // margin-right: 10px;
-  width: 40px;
-  height: 40px;
-  margin-bottom: $font-size + 4px;
-}
-
 
 .receipt {
 

@@ -1,49 +1,25 @@
 <template>
-  <div class="relative m-4" sticky-container>
-    <VirtualList v-if="items?.length" dataPropName="message" :data="items" :data-key="getKey" :item="ChatMessageDisplay"
-      :size="20" class="scroller" />
+  <div class="relative m-4"
+       sticky-container>
+    <MsgList />
   </div>
 </template>
 
 <script lang="ts" setup>
 import { ref, onMounted } from 'vue'
-import { Message, mergeAdjacentMessages } from './ChatMessage';
-import ChatMessageDisplay from './ChatMessageDisplay.vue';
 import { randChat } from './randChatG';
-import VirtualList from './VirtualList/index.tsx';
-const items = ref<Message[]>([] as any)
+import MsgList from './MsgList.vue';
+import useChatStore from '@/store/modules/chatStore';
+
+const { initMessages } = useChatStore()
 const genChatCount = 100
-const me = 'SenderA'
-const getKey = (item: Message) => item.id
 
 onMounted(() => {
-  let msgs = randChat(genChatCount).map((m) => {
-    m['isSelfMessage'] = m.senderName === me
-    return m
-  })
-
-
-  msgs.forEach((message, index) => {
-    message.showAvatar = true; // always show avatar
-  });
-  // is self message, senderName === me
-  msgs.forEach((message, index) => {
-    if (message.senderName === me) {
-      message.isSelfMessage = true;
-    } else {
-      message.isSelfMessage = false;
-    }
-  });
-
-  msgs = mergeAdjacentMessages(msgs)
-  // freeze the array
+  let msgs = randChat(genChatCount)
   msgs.forEach((m) => {
     Object.freeze(m)
   })
-
-  runChunked((chunk: Message[]) => {
-    items.value = items.value.concat(chunk)
-  }, msgs, 10)
+  initMessages(msgs)
 })
 
 // idlecallback
@@ -59,7 +35,6 @@ function runChunked(task: Function, data: any[], chunkSize: number) {
         if (data.length > 0) {
           _run()
         } else {
-          console.log(items.value);
           console.log('done')
         }
       }
