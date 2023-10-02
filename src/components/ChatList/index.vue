@@ -1,49 +1,33 @@
 <template>
-  <div class="relative m-4" sticky-container>
-    <VirtualList v-if="items?.length" dataPropName="message" :data="items" :data-key="getKey" :item="ChatMessageDisplay"
-      :size="20" class="scroller" />
-  </div>
+  <MsgList class="scroller m-4"
+           ref="msglistRef" />
 </template>
 
 <script lang="ts" setup>
 import { ref, onMounted } from 'vue'
-import { Message, mergeAdjacentMessages } from './ChatMessage';
-import ChatMessageDisplay from './ChatMessageDisplay.vue';
 import { randChat } from './randChatG';
-import VirtualList from './VirtualList/index.tsx';
-const items = ref<Message[]>([] as any)
+import MsgList from './MsgList.vue';
+import useChatStore from '@/store/modules/chatStore';
+const msglistRef = ref<any | null>(null)
+const { initMessages, appendMessage } = useChatStore()
 const genChatCount = 100
-const me = 'SenderA'
-const getKey = (item: Message) => item.id
-
 onMounted(() => {
-  let msgs = randChat(genChatCount).map((m) => {
-    m['isSelfMessage'] = m.senderName === me
-    return m
-  })
+  // let msgs = randChat(genChatCount)
+  // msgs.forEach((m) => {
+  //   Object.freeze(m)
+  // })
+  // initMessages(msgs)
 
+  const timer = setInterval(() => {
+    appendMessage(Object.freeze(randChat(1)[0]))
+    msglistRef.value?.scrollToBottom()
+  }, 20)
 
-  msgs.forEach((message, index) => {
-    message.showAvatar = true; // always show avatar
-  });
-  // is self message, senderName === me
-  msgs.forEach((message, index) => {
-    if (message.senderName === me) {
-      message.isSelfMessage = true;
-    } else {
-      message.isSelfMessage = false;
-    }
-  });
+  setTimeout(() => {
+    clearInterval(timer)
+    // msglistRef.value?.scrollToBottom()
+  }, 400)
 
-  msgs = mergeAdjacentMessages(msgs)
-  // freeze the array
-  msgs.forEach((m) => {
-    Object.freeze(m)
-  })
-
-  runChunked((chunk: Message[]) => {
-    items.value = items.value.concat(chunk)
-  }, msgs, 10)
 })
 
 // idlecallback
@@ -59,7 +43,6 @@ function runChunked(task: Function, data: any[], chunkSize: number) {
         if (data.length > 0) {
           _run()
         } else {
-          console.log(items.value);
           console.log('done')
         }
       }
@@ -72,7 +55,7 @@ function runChunked(task: Function, data: any[], chunkSize: number) {
 
 <style scoped>
 .scroller {
-  max-height: 90vh;
+  max-height: 250px;
   padding-right: 2px;
   overflow: auto;
 }
