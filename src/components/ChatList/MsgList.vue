@@ -5,12 +5,11 @@
                :item="MessageStack"
                :size="20"
                class="scroll-smooth"
-               ref="virtualListRef"
-               id="vli" />
+               ref="virtualListRef" />
 </template>
 <script setup lang="ts">
 import { ref, onMounted, defineProps } from 'vue'
-import { Message, StackedMessage, mergeAdjacentMessages } from './ChatMessage';
+import { Message, StackedMessage } from './ChatMessage';
 import VirtualList from './VirtualList/index.tsx';
 import MessageStack from './MessageStack.vue';
 import useChatStore from '@/store/modules/chatStore';

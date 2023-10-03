@@ -21,7 +21,6 @@ export function randChat(count: number): Message[] {
   const messages: Message[] = [];
   for (let i = 0; i < count; i++) {
     messages.push(new Message(
-      i,
       `Sender${randBetween(0, 1) === 0 ? "A" : "B"}`,
       "",
       lorem.generateSentences(randBetween(1, 10)),

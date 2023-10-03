@@ -1,23 +1,32 @@
 <template>
-  <div class="chat-message flex items-end pb-4 pt-5 h-full ">
+  <div class="chat-message flex items-end pb-4 pt-5 h-full"
+       :class="{
+         'bg-red-600': !canBeSeen,
+         'bg-green-600': canBeSeen,
+       }"
+       ref="msgRef"
+       :msgid="message.id">
+    {{ message.id }}:{{ sentBy?.name }} <br>
 
     <div class="message-body break-all ml-2 mr-2 whitespace-pre-wrap text-xl">
-      sentBy?.name:{{ sentBy?.name  }}
-      message.senderName: {{ message.senderName }}
+
       {{ message.text }}
-      
+
 
       <div class="flex flex-row items-center float-right">
-        <div class="receipt" :class="{
-          collapse: !isSelfMessage,
-          sent: receipt === 'sent',
-          read: receipt === 'read',
-        }">
+        <div class="receipt"
+             :class="{
+               collapse: !isSelfMessage,
+               sent: receipt === 'sent',
+               read: receipt === 'read',
+             }
+               ">
           <Checked v-if="receipt === 'sent'" />
           <DoubleChecked v-else-if="receipt === 'read'" />
         </div>
 
-        <div class="read-count" v-if="message.group">
+        <div class="read-count"
+             v-if="message.group">
           {{ message.readCount }}
         </div>
       </div>
@@ -26,11 +35,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { Message, User } from './ChatMessage';
 import Checked from './icons/Checked.vue';
 import DoubleChecked from './icons/DoubleChecked.vue';
-
+import useChatStore from '@/store/modules/chatStore';
+const { observer, map } = useChatStore()
+const msgRef = ref<HTMLElement | null>(null)
+onMounted(() => {
+  if (!msgRef.value) return
+  observer.observe(msgRef.value)
+  // console.log(props.message)
+  map.set(+props.message.id, setObservableState)
+})
 
 const props = defineProps({
   message: {
@@ -57,11 +74,30 @@ const props = defineProps({
     default: true,
   }
 });
+
+const emits = defineEmits(['click', 'sean']);
+
 const msg = ref(props.message);
 const isSelfMessage = computed(() => props.sentBy?.name === msg.value.senderName);
 const receipt = computed(() => {
   return props.message.read ? 'read' : 'sent';
 });
+
+
+const canBeSeen = ref(false);
+const setObservableState = (state: boolean) => {
+  canBeSeen.value = state;
+};
+
+defineExpose({
+  msgRef,
+  msg,
+  isSelfMessage,
+  receipt,
+  canBeSeen,
+  setObservableState,
+});
+
 </script>
 <style scoped lang="scss">
 .collapsed {

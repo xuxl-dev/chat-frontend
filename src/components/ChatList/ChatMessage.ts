@@ -11,7 +11,8 @@ export interface IMessage {
 }
 
 export class Message implements IMessage {
-  id: number
+  static _id = 0
+  id: number = Message._id++
   senderName: string
   senderAvatar: string
   text: string
@@ -23,7 +24,6 @@ export class Message implements IMessage {
   [key: string]: any
 
   constructor(
-    id: number,
     senderName: string,
     senderAvatar: string,
     text: string | string,
@@ -31,7 +31,6 @@ export class Message implements IMessage {
     group: boolean = false,
     readCount: number = 0
   ) {
-    this.id = id // 消息ID
     this.senderName = senderName // 发送者姓名
     this.senderAvatar = senderAvatar // 发送者头像
     this.text = text // 聊天文本内容
