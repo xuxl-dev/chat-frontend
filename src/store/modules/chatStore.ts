@@ -1,9 +1,30 @@
-import type { MessageWarp } from '@/components/ChatList/ChatMessage'
+import { MessageWarp } from '@/components/ChatList/ChatMessage'
+import { Message } from '@/components/ChatList/helpers/messageHelper'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
 const useChatStore = defineStore('storeId', () => {
+  /** @deprecated */
   const messages = ref<MessageWarp[]>([] as any)
+
+  const conversations: Map<
+    number,
+    {
+      chat: typeof messages
+    }
+  > = new Map()
+
+  const updateConversationCallback = (raw: Message) => {
+    if (conversations.has(raw.senderId)) {
+      const conversation = conversations.get(raw.senderId)
+      conversation?.chat.value.push(MessageWarp.fromMessage(raw))
+    } else {
+      const conversation = {
+        chat: ref<MessageWarp[]>([MessageWarp.fromMessage(raw)])
+      }
+      conversations.set(raw.senderId, conversation)
+    }
+  }
 
   const initMessages = (_messages: MessageWarp[]) => {
     messages.value = _messages

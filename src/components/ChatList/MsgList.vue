@@ -9,7 +9,7 @@
 </template>
 <script setup lang="ts">
 import { ref, onMounted, defineProps } from 'vue'
-import { Message, StackedMessage } from './ChatMessage';
+import { MessageWarp, StackedMessage } from './ChatMessage';
 import VirtualList from './VirtualList/index.tsx';
 import MessageStack from './MessageStack.vue';
 import useChatStore from '@/store/modules/chatStore';
@@ -23,7 +23,7 @@ onMessagesUpdated((msg) => {
   append(msg)
 })
 
-const append = (message: Message) => {
+const append = (message: MessageWarp) => {
   if (!lastStack()) {
     messageGroups.value.push(new StackedMessage([message]))
     return
