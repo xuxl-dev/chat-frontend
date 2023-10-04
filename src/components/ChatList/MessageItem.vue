@@ -1,19 +1,17 @@
 <template>
-  <div class="chat-message flex items-end pb-4 pt-5 h-full"
-       :class="{
-         'bg-red-600': !canBeSeen,
-         'bg-green-600': canBeSeen,
-       }"
+  <div class="chat-message flex items-end  h-full"
        ref="msgRef"
        :msgid="message.id">
-    {{ message.id }}:{{ sentBy?.name }} <br>
-
-    <div class="message-body break-all ml-2 mr-2 whitespace-pre-wrap text-xl">
-
+    <div class="message-body break-words ml-2 mr-2 whitespace-pre-wrap text-xl"
+    :class="{
+      'message-bubble': !isSelfMessage,
+      'my-message-bubble':isSelfMessage,
+      'no-tail': displayStyle !== 'tail',
+      'left-tailed': displayStyle === 'tail' && !isSelfMessage,
+      'right-tailed': displayStyle === 'tail' && isSelfMessage,
+    }">
       {{ message.text }}
-
-
-      <div class="flex flex-row items-center float-right">
+      <div class="flex float-right">
         <div class="receipt"
              :class="{
                collapse: !isSelfMessage,
@@ -25,9 +23,9 @@
           <DoubleChecked v-else-if="receipt === 'read'" />
         </div>
 
-        <div class="read-count"
+        <div class="read-count flex items-end"
              v-if="message.group">
-          {{ message.readCount }}
+           <span class="text-sm">{{ message.readCount }}</span>
         </div>
       </div>
     </div>
@@ -36,7 +34,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { Message, User } from './ChatMessage';
+import { MessageWarp, User } from './ChatMessage';
 import Checked from './icons/Checked.vue';
 import DoubleChecked from './icons/DoubleChecked.vue';
 import useChatStore from '@/store/modules/chatStore';
@@ -51,7 +49,7 @@ onMounted(() => {
 
 const props = defineProps({
   message: {
-    type: Message,
+    type: MessageWarp,
     required: true,
   },
   sentBy: {
@@ -59,7 +57,7 @@ const props = defineProps({
     required: false,
   },
   displayStyle: {
-    type: String,
+    type: String, // normal, tail
     required: false,
     default: 'normal',
   },
@@ -131,7 +129,7 @@ defineExpose({
 }
 
 $receipt-color: #72eda7;
-$read-color: #4caf50;
+$read-color: #72eda7;
 $font-size: 24px;
 
 .receipt {
@@ -150,7 +148,6 @@ $font-size: 24px;
 
 .read-count {
   font-size: 12px;
-  color: #888;
 }
 
 // 带尾巴的消息框样式
@@ -160,7 +157,9 @@ $font-size: 24px;
   border-radius: 10px;
   position: relative;
   color: black;
+}
 
+.left-tailed {
   &::before {
     content: "";
     position: absolute;
@@ -175,11 +174,27 @@ $font-size: 24px;
   }
 }
 
+.right-tailed {
+  &::before {
+    content: "";
+    position: absolute;
+    right: -10px;
+    bottom: 0px;
+    width: 0;
+    height: 0;
+    border-top: 10px solid transparent;
+    border-bottom: 10px solid transparent;
+    border-left: 10px solid #007bff;
+    transform: translateY(-50%);
+  }
+}
+
 // 没有尾巴的消息框样式
-.message-bubble-no-tail {
+.no-tail {
   color: black;
   padding: 10px;
   border-radius: 10px;
+  margin-bottom: 3px;
 
   &.normal {
     background-color: #e0e0e0;
@@ -199,17 +214,6 @@ $font-size: 24px;
   color: #fff;
   position: relative;
 
-  &::before {
-    content: "";
-    position: absolute;
-    right: -10px;
-    bottom: 0px;
-    width: 0;
-    height: 0;
-    border-top: 10px solid transparent;
-    border-bottom: 10px solid transparent;
-    border-left: 10px solid #007bff;
-    transform: translateY(-50%);
-  }
+
 }
 </style>

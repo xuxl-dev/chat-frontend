@@ -1,5 +1,5 @@
 import { LoremIpsum } from "lorem-ipsum";
-import { Message } from "./ChatMessage";
+import { MessageWarp } from "./ChatMessage";
 
 const lorem = new LoremIpsum({
   sentencesPerParagraph: {
@@ -17,10 +17,10 @@ function randBetween(min: number, max: number): number {
 }
 
 
-export function randChat(count: number): Message[] {
-  const messages: Message[] = [];
+export function randChat(count: number): MessageWarp[] {
+  const messages: MessageWarp[] = [];
   for (let i = 0; i < count; i++) {
-    messages.push(new Message(
+    messages.push(new MessageWarp(
       `Sender${randBetween(0, 1) === 0 ? "A" : "B"}`,
       "",
       lorem.generateSentences(randBetween(1, 10)),

@@ -1,6 +1,8 @@
 import { Socket, io } from 'socket.io-client';
 import { CryptoHelper } from './cipher';
 import EventEmitter from 'eventemitter3';
+import useChatStore from '@/store/modules/chatStore';
+import { MessageWarp } from '../ChatMessage';
 export class CreateMessageDto {
   receiverId!: number
   content!: string | object
@@ -224,6 +226,7 @@ interface IMessageHelper {
   message(msg: Message): any | Promise<any>
   cryptoHelper: CryptoHelper
 }
+
 class Conversation extends EventEmitter {
   public group: number
   private receive_pipeline: MessageHandler[] = []
@@ -445,6 +448,7 @@ type BakaMessagerConfig = {
   token: string,
 }
 
+
 export class BakaMessager extends EventEmitter implements IMessageHelper  {
   conversationMap = new Map<number, Conversation>()
   socket: Socket
@@ -496,6 +500,8 @@ export class BakaMessager extends EventEmitter implements IMessageHelper  {
       this.socket.on('connected', (o) => {
         this.user = o
         console.log('connected: ', o);
+        this.appendMessage = useChatStore().appendMessage //TODO: this is for test only, delete this
+
         resolve()
       })
 
@@ -512,13 +518,15 @@ export class BakaMessager extends EventEmitter implements IMessageHelper  {
         this.handleMessage(msg);
       })
     })
-  }
 
+  }
+  appendMessage: (message: MessageWarp) => void
   private handleMessage(msg: Message) {
     if (!this.conversationMap.has(msg.senderId)) {
       this.newConversation(msg.senderId);
     }
     this.conversationMap.get(msg.senderId).notify(msg);
+    this.appendMessage(MessageWarp.fromMessage(msg)) //TODO: this is for test only, delete this
   }
 
   private newConversation(senderId: number) {

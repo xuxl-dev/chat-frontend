@@ -1,3 +1,4 @@
+import type { Message } from './helpers/messageHelper'
 
 export interface IMessage {
   id: number
@@ -10,9 +11,9 @@ export interface IMessage {
   readCount: number
 }
 
-export class Message implements IMessage {
+export class MessageWarp implements IMessage {
   static _id = 0
-  id: number = Message._id++
+  id: number = MessageWarp._id++
   senderName: string
   senderAvatar: string
   text: string
@@ -39,18 +40,29 @@ export class Message implements IMessage {
     this.readCount = readCount // 已读计数（仅在群组聊天中使用）
     this.showAvatar = true // 是否显示头像
   }
+
+  static fromMessage(message: Message): MessageWarp {
+    return new MessageWarp(
+      message.senderId + '',
+      message.receiverId + '',
+      message.content.toString(),
+      message.hasReadCount > 0,
+      message.flag === 1, //TODO: implement this
+      message.hasReadCount
+    )
+  }
 }
 
 export class StackedMessage {
   static _stack_id = 0
   stack_id: number = StackedMessage._stack_id++
-  messages: Message[] = []
+  messages: MessageWarp[] = []
 
-  constructor(arr: Message[] = []) {
+  constructor(arr: MessageWarp[] = []) {
     this.messages = arr
   }
 
-  append(message: Message) {
+  append(message: MessageWarp) {
     this.messages.push(message)
   }
 
@@ -59,7 +71,9 @@ export class StackedMessage {
   }
 }
 
-export function mergeAdjacentMessages(messages: Message[]): StackedMessage[] {
+export function mergeAdjacentMessages(
+  messages: MessageWarp[]
+): StackedMessage[] {
   const ret: StackedMessage[] = []
   let lastSenderName = ''
 

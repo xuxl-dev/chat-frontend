@@ -219,7 +219,7 @@ export default defineComponent({
      * 滚动到指定偏移量
      * @param offset 滚动条偏移量
      */
-    const scrollToOffset = debounce((offset: number, smooth = false) => {
+    const scrollToOffset = (offset: number, smooth = false) => {
       if (rootRef.value) {
         rootRef.value.scrollTop = offset
         rootRef.value.scrollTo({
@@ -228,7 +228,7 @@ export default defineComponent({
           behavior: smooth ? 'smooth' : 'auto',
         })
       }
-    }, 100)
+    }
 
     /**
      * 渲染插槽列表-（重点函数）
@@ -282,7 +282,7 @@ export default defineComponent({
           }
         }, 1000)
       }
-    }, 500)
+    }, 80)
 
     const getSizes = () => {
       return virtual.sizes.size

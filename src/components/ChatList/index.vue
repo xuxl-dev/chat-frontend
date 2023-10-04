@@ -1,6 +1,7 @@
 <template>
-  <MsgList class="scroller m-4"
+  <MsgList class="scroller"
            ref="msglistRef" />
+
 </template>
 
 <script lang="ts" setup>
@@ -10,23 +11,17 @@ import MsgList from './MsgList.vue';
 import useChatStore from '@/store/modules/chatStore';
 const msglistRef = ref<any | null>(null)
 const { initMessages, appendMessage } = useChatStore()
-const genChatCount = 100
-onMounted(() => {
-  // let msgs = randChat(genChatCount)
-  // msgs.forEach((m) => {
-  //   Object.freeze(m)
-  // })
-  // initMessages(msgs)
 
+onMounted(() => {
   const timer = setInterval(() => {
     appendMessage(Object.freeze(randChat(1)[0]))
     msglistRef.value?.scrollToBottom()
-  }, 20)
+  }, 1000)
 
   setTimeout(() => {
     clearInterval(timer)
     // msglistRef.value?.scrollToBottom()
-  }, 400)
+  }, 10000)
 
 })
 
@@ -51,32 +46,49 @@ function runChunked(task: Function, data: any[], chunkSize: number) {
   _run()
 }
 
+
+
 </script>
 
 <style scoped>
 .scroller {
-  max-height: 250px;
+  max-height: 75vh;
   padding-right: 2px;
   overflow: auto;
+  position: relative;
+  transition: all 1s ease-in-out;
 }
 
-/* width */
-::-webkit-scrollbar {
+.scroller {
+  overflow-y: scroll;
+  overflow-x: hidden;
+  background-color: rgba(215, 215, 215, 0);
+  background-clip: text;
+  transition: all .3s ease-in-out;
+}
+
+.scroller:hover {
+  background-color: rgba(147, 147, 147, 1);
+}
+
+.scroller::-webkit-scrollbar-thumb {
+  background-color: inherit;
+}
+
+.scroller::-webkit-scrollbar {
   width: 10px;
+  height: 10px;
 }
 
-/* Track */
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
+.scroller::-webkit-scrollbar-thumb {
+  border-radius: 5px;
 }
 
-/* Handle */
-::-webkit-scrollbar-thumb {
-  background: #888;
+.scroller:hover::-webkit-scrollbar {
+  opacity: 0.1;
 }
+</style>
 
-/* Handle on hover */
-::-webkit-scrollbar-thumb:hover {
-  background: #555;
-}
+<style>
+
 </style>

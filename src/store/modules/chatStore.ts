@@ -1,11 +1,11 @@
-import type { Message } from '@/components/ChatList/ChatMessage'
+import type { MessageWarp } from '@/components/ChatList/ChatMessage'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
 const useChatStore = defineStore('storeId', () => {
-  const messages = ref<Message[]>([] as any)
+  const messages = ref<MessageWarp[]>([] as any)
 
-  const initMessages = (_messages: Message[]) => {
+  const initMessages = (_messages: MessageWarp[]) => {
     messages.value = _messages
 
     callbacks['onMessageInit']?.forEach((callback) => {
@@ -13,7 +13,7 @@ const useChatStore = defineStore('storeId', () => {
     })
   }
 
-  const appendMessage = (message: Message) => {
+  const appendMessage = (message: MessageWarp) => {
     messages.value.push(message)
 
     callbacks['onMessagesUpdated']?.forEach((callback) => {
@@ -22,11 +22,11 @@ const useChatStore = defineStore('storeId', () => {
   }
 
   const callbacks: { [key: string]: ((...args: any) => any)[] } = {}
-  const onMessageInit = (callback: (messages: Message[]) => void) => {
+  const onMessageInit = (callback: (messages: MessageWarp[]) => void) => {
     callbacks['onMessageInit'] = callbacks['onMessageInit'] || []
     callbacks['onMessageInit'].push(callback)
   }
-  const onMessagesUpdated = (callback: (message: Message) => void) => {
+  const onMessagesUpdated = (callback: (message: MessageWarp) => void) => {
     callbacks['onMessagesUpdated'] = callbacks['onMessagesUpdated'] || []
     callbacks['onMessagesUpdated'].push(callback)
   }
