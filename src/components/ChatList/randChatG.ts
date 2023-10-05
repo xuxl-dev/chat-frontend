@@ -21,7 +21,7 @@ export function randChat(count: number): MessageWarp[] {
   const messages: MessageWarp[] = [];
   for (let i = 0; i < count; i++) {
     messages.push(new MessageWarp(
-      `Sender${randBetween(0, 1) === 0 ? "A" : "B"}`,
+      randBetween(0, 1),
       "",
       lorem.generateSentences(randBetween(1, 10)),
       randBetween(0, 3) === 1,

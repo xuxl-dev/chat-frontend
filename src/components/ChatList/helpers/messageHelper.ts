@@ -500,7 +500,7 @@ export class BakaMessager extends EventEmitter implements IMessageHelper  {
       this.socket.on('connected', (o) => {
         this.user = o
         console.log('connected: ', o);
-        this.appendMessage = useChatStore().appendMessage //TODO: this is for test only, delete this
+        this.notifyNewMessage = useChatStore().updateConversation //TODO: this is for test only, delete this
 
         resolve()
       })
@@ -520,13 +520,13 @@ export class BakaMessager extends EventEmitter implements IMessageHelper  {
     })
 
   }
-  appendMessage: (message: MessageWarp) => void
+  notifyNewMessage: (message: Message) => void
   private handleMessage(msg: Message) {
     if (!this.conversationMap.has(msg.senderId)) {
       this.newConversation(msg.senderId);
     }
     this.conversationMap.get(msg.senderId).notify(msg);
-    this.appendMessage(MessageWarp.fromMessage(msg)) //TODO: this is for test only, delete this
+    this.notifyNewMessage(msg) //TODO: this is for test only, delete this
   }
 
   private newConversation(senderId: number) {

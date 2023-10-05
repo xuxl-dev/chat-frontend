@@ -4,55 +4,56 @@
          'flex-row-reverse': isSelfMessage,
        }">
 
-    <ElAvatar :src="sender.avatar"
-              :alt="sender.name"
+    <ElAvatar :src="source.sender.avatar"
+              :alt="source.sender.name"
               class="sticky bottom-0 avatar z-50" />
 
     <div class="flex flex-col">
       <!-- {{ stackedMessage.sender }} {{ sender }} -->
       <TransitionGroup name="list"
                        tag="div">
-        <MessageItem v-for="(v, i) in stackedMessage.messages"
+        <MessageItem v-for="(v, i) in source.stack.messages"
                      :key="v.id"
-                     :sent-by="sender"
+                     :sent-by="source.sender"
                      :message="v"
                      :class="{
-                       'justify-end': sender.name === stackedMessage.sender,
+                       'justify-end': source.sender.id === source.stack.sender.id,
                        'message-transform': !isSelfMessage,
                        'self-message-transform': isSelfMessage,
                      }"
-                     :display-style="i === stackedMessage.messages.length - 1 ? 'tail' : 'normal'" />
+                     :display-style="i === source.stack.messages.length - 1 ? 'tail' : 'normal'"
+                     :conversation="source.conversation" />
       </TransitionGroup>
     </div>
   </div>
 </template>
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { Message, StackedMessage, User } from './ChatMessage';
+import { MessageWarp, StackedMessage, User } from './ChatMessage';
 import MessageItem from './MessageItem.vue';
-const isSelfMessage = computed(() => props.stackedMessage.sender === props.sender.name)
+import useChatStore, { Conversation } from '@/store/modules/chatStore';
+const {me} = useChatStore()
+const isSelfMessage = computed(() => props.source.stack.sender.id === me.id)
 onMounted(() => {
   props
 })
 
+export interface Source {
+  stack: StackedMessage,
+  conversation: Conversation,
+  sender: User,
+}
+
 const props = defineProps({
-  stackedMessage: {
-    type: StackedMessage,
+  source: {
+    type: Object as () => Source,
     required: true,
-  },
-  sender: {
-    type: User,
-    required: false,
-    default: new User(1, 'SenderA', ''),
   }
 });
 
 const emits = defineEmits({
-  'append-message': (message: Message) => true,
+  'append-message': (message: MessageWarp) => true,
 });
-
-const appendMessage = (message: Message) => {
-};
 
 </script>
 <style lang="scss" scoped>
@@ -97,11 +98,11 @@ $font-size: 24px;
 
 
 .message-transform {
-  --translate-distance: 30px;
+  --translate-distance: 5%;
 }
 
 .self-message-transform {
-  --translate-distance: -30px;
+  --translate-distance: -5%;
 }
 
 .list-leave-active {

@@ -1,15 +1,18 @@
 <template>
-  <div class="chat-message flex items-end  h-full"
+  <div class="chat-message flex items-end h-full"
        ref="msgRef"
-       :msgid="message.id">
+       :msgid="message.id"
+       :class="{
+         'flex-row-reverse': !isSelfMessage,
+       }">
     <div class="message-body break-words ml-2 mr-2 whitespace-pre-wrap text-xl"
-    :class="{
-      'message-bubble': !isSelfMessage,
-      'my-message-bubble':isSelfMessage,
-      'no-tail': displayStyle !== 'tail',
-      'left-tailed': displayStyle === 'tail' && !isSelfMessage,
-      'right-tailed': displayStyle === 'tail' && isSelfMessage,
-    }">
+         :class="{
+           'message-bubble': !isSelfMessage,
+           'my-message-bubble': isSelfMessage,
+           'no-tail': displayStyle !== 'tail',
+           'left-tailed': displayStyle === 'tail' && !isSelfMessage,
+           'right-tailed': displayStyle === 'tail' && isSelfMessage,
+         }">
       {{ message.text }}
       <div class="flex float-right">
         <div class="receipt"
@@ -25,7 +28,7 @@
 
         <div class="read-count flex items-end"
              v-if="message.group">
-           <span class="text-sm">{{ message.readCount }}</span>
+          <span class="text-sm">{{ message.readCount }}</span>
         </div>
       </div>
     </div>
@@ -37,14 +40,14 @@ import { ref, computed, onMounted } from 'vue';
 import { MessageWarp, User } from './ChatMessage';
 import Checked from './icons/Checked.vue';
 import DoubleChecked from './icons/DoubleChecked.vue';
-import useChatStore from '@/store/modules/chatStore';
-const { observer, map } = useChatStore()
+import useChatStore, { Conversation } from '@/store/modules/chatStore';
+const { me } = useChatStore()
 const msgRef = ref<HTMLElement | null>(null)
 onMounted(() => {
   if (!msgRef.value) return
-  observer.observe(msgRef.value)
+  props.conversation.observer.observe(msgRef.value)
   // console.log(props.message)
-  map.set(+props.message.id, setObservableState)
+  props.conversation.map.set(+props.message.id, setObservableState)
 })
 
 const props = defineProps({
@@ -70,13 +73,17 @@ const props = defineProps({
     type: Boolean,
     required: false,
     default: true,
+  },
+  conversation: {
+    type: Conversation,
+    required: true,
   }
 });
 
 const emits = defineEmits(['click', 'sean']);
 
 const msg = ref(props.message);
-const isSelfMessage = computed(() => props.sentBy?.name === msg.value.senderName);
+const isSelfMessage = computed(() => props.message.sender.id === me.id);
 const receipt = computed(() => {
   return props.message.read ? 'read' : 'sent';
 });

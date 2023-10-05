@@ -1,6 +1,7 @@
 <template>
   <MsgList class="scroller"
-           ref="msglistRef" />
+           ref="msglistRef"
+           channel="1" />
 
 </template>
 
@@ -10,11 +11,12 @@ import { randChat } from './randChatG';
 import MsgList from './MsgList.vue';
 import useChatStore from '@/store/modules/chatStore';
 const msglistRef = ref<any | null>(null)
-const { initMessages, appendMessage } = useChatStore()
+const { getConversation } = useChatStore()
 
 onMounted(() => {
+  const conv = getConversation(1)
   const timer = setInterval(() => {
-    appendMessage(Object.freeze(randChat(1)[0]))
+    conv.notify(Object.freeze(randChat(1)[0]))
     msglistRef.value?.scrollToBottom()
   }, 1000)
 
@@ -56,10 +58,6 @@ function runChunked(task: Function, data: any[], chunkSize: number) {
   padding-right: 2px;
   overflow: auto;
   position: relative;
-  transition: all 1s ease-in-out;
-}
-
-.scroller {
   overflow-y: scroll;
   overflow-x: hidden;
   background-color: rgba(215, 215, 215, 0);
