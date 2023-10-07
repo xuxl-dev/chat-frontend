@@ -1,19 +1,20 @@
 <template>
-  <VirtualList :data="messageGroups"
-               :data-key="getKey"
-               :item="MessageStack"
-               :size="20"
-               class="scroll-smooth"
-               ref="virtualListRef" />
+  <div>
+    <VirtualList :data="messageGroups" :data-key="getKey" :item="MessageStack" :size="20" class="scroll-smooth"
+      ref="virtualListRef" />
+  
+    <button @click="trigger">trigger</button>
+  </div>
 </template>
 <script setup lang="ts">
-import { ref, onMounted, defineProps, watch, shallowRef } from 'vue';
+import { ref, onMounted, defineProps, watch, shallowRef, triggerRef } from 'vue';
 import { MessageWarp, StackedMessage, User } from './ChatMessage';
 import VirtualList from './VirtualList/index.tsx';
 import MessageStack, { type Source } from './MessageStack.vue';
 import useChatStore, { Conversation } from '@/store/modules/chatStore';
-import { testClass } from './MessageStack.vue';
-
+const trigger = () => {
+  triggerRef(messageGroups)
+}
 const props = defineProps({
   channel: {
     type: String,
@@ -24,15 +25,17 @@ const props = defineProps({
 const getKey = (item: Source) => item.stack.stack_id
 const { getConversation } = useChatStore()
 
-const messageGroups = shallowRef<Source[]>([]);
-const messageGroups2:Source[]  = [];
+const messageGroups = ref<Source[]>([]);
 const virtualListRef = ref<any | null>(null)
 let conv: Conversation
 onMounted(() => {
   conv = getConversation(+props.channel)
+
   watch(conv.chat, (newVal, oldVal) => {
+    console.log('new msg', messageGroups.value)
     const newMsg = newVal.at(-1)
     append(newMsg)
+    triggerRef(messageGroups)
   }, { immediate: false, deep: true })
   scrollToBottom()
 })
@@ -46,9 +49,8 @@ const append = (message: MessageWarp | Readonly<MessageWarp>) => {
         message.sender.name,
         message.sender.avatar
       ),
-      conversation: conv
+      conversation: conv as any // Im sure this is a bug that typescript wrongly infer the type of conversation
     })
-    
   } else {
     const last = lastStack()!
     if (last.stack.sender.id === message.sender.id) {
@@ -57,10 +59,11 @@ const append = (message: MessageWarp | Readonly<MessageWarp>) => {
       messageGroups.value.push({
         stack: new StackedMessage([message]),
         sender: message.sender,
-        conversation: conv
+        conversation: conv as any // Im sure this is a bug that typescript wrongly infer the type of conversation
       })
     }
   }
+
 }
 
 const lastStack = () => {

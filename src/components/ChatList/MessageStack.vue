@@ -22,7 +22,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { MessageWarp, StackedMessage, User } from './ChatMessage';
 import MessageItem from './MessageItem.vue';
-import useChatStore, { Conversation } from '@/store/modules/chatStore';
+import useChatStore, { type Conversation } from '@/store/modules/chatStore';
 import {type Ref }from 'vue';
 const { me } = useChatStore()
 const isSelfMessage = computed(() => props.source.stack.sender.id === me.id)
@@ -30,9 +30,6 @@ onMounted(() => {
   props
 })
 
-export class testClass {
-  foo: Ref<string> = ref('foo')
-}
 export interface Source {
   stack: StackedMessage,
   conversation: Conversation,
