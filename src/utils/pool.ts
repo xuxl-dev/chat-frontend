@@ -7,7 +7,7 @@ export const run = async <T extends (...args: any) => any>(func: T, ...args: Par
   return res;
 }
 
-export const makePooled = <T extends (...args: any) => any>(func: T, ...args: Parameters<T>) => {
+export const makePooled = <T extends (...args: any) => any>(func: T) => {
   return async (...args: Parameters<T>) => {
     const res = await pool.exec(func, args);
     return res;
