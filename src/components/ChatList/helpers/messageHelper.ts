@@ -32,7 +32,7 @@ export enum ACKMsgType {
 export type MsgId = string
 
 export class Message {
-  msgId: MsgId
+  msgId?: MsgId
 
   senderId: number
 
@@ -94,6 +94,42 @@ export class Message {
     msg.senderId = object.senderId
     return msg
   }
+
+  text(str: string) {
+    this.content = str
+    return this
+  }
+
+  to(receiverId: number) {
+    this.receiverId = receiverId
+    return this
+  }
+
+  from(senderId: number) {
+    this.senderId = senderId
+    return this
+  }
+}
+export function getMessageStr(msg: Message) { //this is dirty
+  console.log('this.flag: ', findFlagsByValue(msg.flag));
+  return `${findFlagsByValue(msg.flag).join('|')}\n ${msg.senderId} -> ${msg.receiverId} ${typeof msg.content === 'object' ? JSON.stringify(msg.content) : msg.content}`
+}
+function findFlagsByValue(value: number): string[] {
+  const flags: string[] = [];
+  
+  for (const [key, val] of Object.entries(MessageFlag)) {
+    if (typeof val === 'number' && (value & val) === val) {
+      if (key === 'NONE') {
+        continue;
+      }
+      flags.push(key);
+    }
+  }
+  if (flags.length === 0) {
+    flags.push('NONE');
+  }
+  
+  return flags;
 }
 
 export class MessageHelper {
@@ -290,7 +326,12 @@ class Conversation extends EventEmitter {
     }
   }
 
+  /**
+   * 
+   * @param message  in message, `receiverId` is overwritten by conversation's group
+   */
   public async send(message: Message) {
+    message.receiverId = this.group
     for (const handler of this.send_pipeline) {
       if (handler.pattern(message)) {
         await handler.handler(message)
@@ -519,7 +560,8 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
         this.user = o
         console.log('connected: ', o);
         this.notifyNewMessage = useChatStore().updateConversation //TODO: this is for test only, delete this
-
+        useChatStore().me = o
+        console.log('me: ', useChatStore().me);
         resolve()
       })
 
@@ -563,7 +605,10 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
   }
 
 
-  public getConversation(id: number): Conversation | undefined {
+  public getConversation(id: number): Conversation {
+    if (!this.conversationMap.has(id)) {
+      this.newConversation(id)
+    }
     return this.conversationMap.get(id)
   }
 

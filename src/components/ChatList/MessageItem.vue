@@ -83,7 +83,7 @@ const props = defineProps({
 const emits = defineEmits(['click', 'sean']);
 
 const msg = ref(props.message);
-const isSelfMessage = computed(() => props.message.sender.id === me.id);
+const isSelfMessage = computed(() => props.message.sender.id === me?.id);
 const receipt = computed(() => {
   return props.message.status;
 });

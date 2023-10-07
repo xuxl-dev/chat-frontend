@@ -5,7 +5,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ref, onMounted, defineProps, watch, shallowRef, triggerRef } from 'vue';
+import { ref, onMounted, watch, shallowRef, triggerRef } from 'vue';
 import { MessageWarp, StackedMessage, User } from './ChatMessage';
 import VirtualList from './VirtualList/index.tsx';
 import MessageStack, { type Source } from './MessageStack.vue';
@@ -13,7 +13,7 @@ import useChatStore, { Conversation } from '@/store/modules/chatStore';
 
 const props = defineProps({
   channel: {
-    type: String,
+    type: Number,
     required: true
   }
 })
@@ -24,13 +24,25 @@ const { getConversation } = useChatStore()
 const messageGroups = ref<Source[]>([]);
 const virtualListRef = ref<any | null>(null)
 let conv: Conversation
+let curWatch: Function | null = null
 onMounted(() => {
-  conv = getConversation(+props.channel)
+  conv = getConversation(props.channel)
 
-  watch(conv.chat, (newVal, oldVal) => {
+  curWatch = watch(conv.chat, (newVal, oldVal) => {
     const newMsg = newVal.at(-1)
     append(newMsg)
-    triggerRef(messageGroups)
+  }, { immediate: false, deep: true })
+  scrollToBottom()
+})
+
+// on prop channel change
+watch(() => props.channel, (newVal, oldVal) => {
+  curWatch?.()
+  messageGroups.value = []
+  conv = getConversation(newVal)
+  curWatch = watch(conv.chat, (newVal, oldVal) => {
+    const newMsg = newVal.at(-1)
+    append(newMsg)
   }, { immediate: false, deep: true })
   scrollToBottom()
 })

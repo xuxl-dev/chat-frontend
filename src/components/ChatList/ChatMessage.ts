@@ -1,4 +1,4 @@
-import type { Message } from './helpers/messageHelper'
+import { getMessageStr, type Message } from './helpers/messageHelper'
 
 export class MessageWarp {
   static _id = 0
@@ -22,7 +22,7 @@ export class MessageWarp {
 
   get text(): string {
     if (typeof this._msg.content === 'object') {
-      return `[NOT TEXT]`
+      return `[DEBUG] \n ${getMessageStr(this._msg)}` 
     }
     return this._msg.content
   }
@@ -88,7 +88,7 @@ export class User {
   id: number
   name: string
   avatar: string
-
+  [key: string]: any
   constructor(id: number, name: string, avatar: string) {
     this.id = id
     this.name = name

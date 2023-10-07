@@ -25,9 +25,8 @@ import MessageItem from './MessageItem.vue';
 import useChatStore, { type Conversation } from '@/store/modules/chatStore';
 import {type Ref }from 'vue';
 const { me } = useChatStore()
-const isSelfMessage = computed(() => props.source.stack.sender.id === me.id)
+const isSelfMessage = computed(() => props.source.stack.sender.id === me?.id)
 onMounted(() => {
-  props
 })
 
 export interface Source {
