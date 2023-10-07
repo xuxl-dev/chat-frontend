@@ -32,7 +32,7 @@ export enum ACKMsgType {
 export type MsgId = string
 
 export class Message {
-  msgId: MsgId
+  msgId?: MsgId
 
   senderId: number
 
@@ -93,6 +93,21 @@ export class Message {
     msg.flag = object.flag
     msg.senderId = object.senderId
     return msg
+  }
+
+  text(str: string) {
+    this.content = str
+    return this
+  }
+
+  to(receiverId: number) {
+    this.receiverId = receiverId
+    return this
+  }
+
+  from(senderId: number) {
+    this.senderId = senderId
+    return this
   }
 }
 
@@ -290,7 +305,12 @@ class Conversation extends EventEmitter {
     }
   }
 
+  /**
+   * 
+   * @param message  in message, `receiverId` is overwritten by conversation's group
+   */
   public async send(message: Message) {
+    message.receiverId = this.group
     for (const handler of this.send_pipeline) {
       if (handler.pattern(message)) {
         await handler.handler(message)
@@ -519,7 +539,7 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
         this.user = o
         console.log('connected: ', o);
         this.notifyNewMessage = useChatStore().updateConversation //TODO: this is for test only, delete this
-
+        useChatStore().me = o
         resolve()
       })
 

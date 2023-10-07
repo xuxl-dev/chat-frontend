@@ -1,4 +1,4 @@
-import { MessageWarp } from '@/components/ChatList/ChatMessage'
+import { MessageWarp, User } from '@/components/ChatList/ChatMessage'
 import { Message } from '@/components/ChatList/helpers/messageHelper'
 import { defineStore } from 'pinia'
 import { ref, type Ref } from 'vue'
@@ -35,6 +35,7 @@ export class Conversation {
 }
 
 const useChatStore = defineStore('chatStore', () => {
+  const me = ref<User | null>(null)
   const conversations: Map<number, Conversation> = new Map()
 
   const updateConversation = (raw: Message) => {
@@ -55,9 +56,7 @@ const useChatStore = defineStore('chatStore', () => {
     return conversations.get(id)!
   }
 
-  const me = ref({
-    id: 2, //TODO: implement this
-  })
+
 
   return {
     getConversation,

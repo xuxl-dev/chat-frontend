@@ -88,7 +88,7 @@ export class User {
   id: number
   name: string
   avatar: string
-
+  [key: string]: any
   constructor(id: number, name: string, avatar: string) {
     this.id = id
     this.name = name
