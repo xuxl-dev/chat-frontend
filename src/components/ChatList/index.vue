@@ -24,7 +24,6 @@ onMounted(() => {
     clearInterval(timer)
     // msglistRef.value?.scrollToBottom()
   }, 10000)
-
 })
 
 // idlecallback

@@ -32,7 +32,10 @@ export class MessageWarp {
   }
 
   get status(): 'DELIVERED' | 'READ' {
-    throw new Error('Not implemented') //TODO: implement this
+    if (!this._msg.hasReadCount) {
+      return 'DELIVERED'
+    }
+    return this._msg.hasReadCount > 0 ? 'READ' : 'DELIVERED'
   }
 
   get senderAvatar(): string {
@@ -48,9 +51,9 @@ export class MessageWarp {
 export class StackedMessage {
   static _stack_id = 0
   stack_id: number = StackedMessage._stack_id++
-  messages: MessageWarp[] = []
+  messages: (MessageWarp | Readonly<MessageWarp>)[] = []
 
-  constructor(arr: MessageWarp[] = []) {
+  constructor(arr: (MessageWarp | Readonly<MessageWarp>)[] = []) {
     this.messages = arr
   }
 

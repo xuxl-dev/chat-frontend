@@ -1,7 +1,7 @@
 import { MessageWarp } from '@/components/ChatList/ChatMessage'
 import { Message } from '@/components/ChatList/helpers/messageHelper'
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, type Ref } from 'vue'
 
 const observationOptions = {
   root: null,
@@ -10,7 +10,9 @@ const observationOptions = {
 }
 
 export class Conversation {
-  chat = ref<(MessageWarp | Readonly<MessageWarp>)[]>([] as any)
+  constructor() { }
+
+  chat = ref<MessageWarp[]>([])
   callback = (entries: any, observer: any) => {
     entries.forEach((entry: any) => {
       if (entry.isIntersecting) {
@@ -25,7 +27,6 @@ export class Conversation {
 
   observer = new IntersectionObserver(this.callback, observationOptions)
   map = new Map()
-  constructor() { }
 
   notify(msg: MessageWarp | Readonly<MessageWarp>) {
     this.chat.value.push(msg)
@@ -55,7 +56,7 @@ const useChatStore = defineStore('chatStore', () => {
   }
 
   const me = ref({
-    id: 1, //TODO: implement this
+    id: 2, //TODO: implement this
   })
 
   return {

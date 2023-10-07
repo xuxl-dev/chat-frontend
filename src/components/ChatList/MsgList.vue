@@ -1,13 +1,11 @@
 <template>
-  <VirtualList :data="messageGroups"
-               :data-key="getKey"
-               :item="MessageStack"
-               :size="20"
-               class="scroll-smooth"
-               ref="virtualListRef" />
+  <div>
+    <VirtualList :data="messageGroups" :data-key="getKey" :item="MessageStack" :size="20" class="scroll-smooth"
+      ref="virtualListRef" />
+  </div>
 </template>
 <script setup lang="ts">
-import { ref, onMounted, defineProps, watch } from 'vue'
+import { ref, onMounted, defineProps, watch, shallowRef, triggerRef } from 'vue';
 import { MessageWarp, StackedMessage, User } from './ChatMessage';
 import VirtualList from './VirtualList/index.tsx';
 import MessageStack, { type Source } from './MessageStack.vue';
@@ -28,14 +26,16 @@ const virtualListRef = ref<any | null>(null)
 let conv: Conversation
 onMounted(() => {
   conv = getConversation(+props.channel)
+
   watch(conv.chat, (newVal, oldVal) => {
     const newMsg = newVal.at(-1)
     append(newMsg)
+    triggerRef(messageGroups)
   }, { immediate: false, deep: true })
   scrollToBottom()
 })
 
-const append = (message: MessageWarp) => {
+const append = (message: MessageWarp | Readonly<MessageWarp>) => {
   if (!lastStack()) {
     messageGroups.value.push({
       stack: new StackedMessage([message]),
@@ -44,7 +44,7 @@ const append = (message: MessageWarp) => {
         message.sender.name,
         message.sender.avatar
       ),
-      conversation: conv  //TODO: check type
+      conversation: conv as any // Im sure this is a bug that typescript wrongly infer the type of conversation
     })
   } else {
     const last = lastStack()!
@@ -54,10 +54,11 @@ const append = (message: MessageWarp) => {
       messageGroups.value.push({
         stack: new StackedMessage([message]),
         sender: message.sender,
-        conversation: conv
+        conversation: conv as any // Im sure this is a bug that typescript wrongly infer the type of conversation
       })
     }
   }
+
 }
 
 const lastStack = () => {

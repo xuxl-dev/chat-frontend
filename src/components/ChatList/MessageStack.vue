@@ -1,28 +1,19 @@
 <template>
-  <div class="message-container items-end mt-4 mb-4"
-       :class="{
-         'flex-row-reverse': isSelfMessage,
-       }">
+  <div class="message-container items-end mt-4 mb-4" :class="{
+    'flex-row-reverse': isSelfMessage,
+  }">
 
-    <ElAvatar :src="source.sender.avatar"
-              :alt="source.sender.name"
-              class="sticky bottom-0 avatar z-50" />
+    <ElAvatar :src="source.sender.avatar" :alt="source.sender.name" class="sticky bottom-0 avatar z-50" />
 
     <div class="flex flex-col">
       <!-- {{ stackedMessage.sender }} {{ sender }} -->
-      <TransitionGroup name="list"
-                       tag="div">
-        <MessageItem v-for="(v, i) in source.stack.messages"
-                     :key="v.id"
-                     :sent-by="source.sender"
-                     :message="v"
-                     :class="{
-                       'justify-end': source.sender.id === source.stack.sender.id,
-                       'message-transform': !isSelfMessage,
-                       'self-message-transform': isSelfMessage,
-                     }"
-                     :display-style="i === source.stack.messages.length - 1 ? 'tail' : 'normal'"
-                     :conversation="source.conversation" />
+      <TransitionGroup name="list" tag="div">
+        <MessageItem v-for="(v, i) in source.stack.messages" :key="v.id" :sent-by="source.sender" :message="v" :class="{
+          'justify-end': source.sender.id === source.stack.sender.id,
+          'message-transform': !isSelfMessage,
+          'self-message-transform': isSelfMessage,
+        }" :display-style="i === source.stack.messages.length - 1 ? 'tail' : 'normal'"
+          :conversation="source.conversation" />
       </TransitionGroup>
     </div>
   </div>
@@ -31,8 +22,9 @@
 import { ref, onMounted, computed } from 'vue'
 import { MessageWarp, StackedMessage, User } from './ChatMessage';
 import MessageItem from './MessageItem.vue';
-import useChatStore, { Conversation } from '@/store/modules/chatStore';
-const {me} = useChatStore()
+import useChatStore, { type Conversation } from '@/store/modules/chatStore';
+import {type Ref }from 'vue';
+const { me } = useChatStore()
 const isSelfMessage = computed(() => props.source.stack.sender.id === me.id)
 onMounted(() => {
   props
