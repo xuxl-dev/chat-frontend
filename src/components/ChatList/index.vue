@@ -1,29 +1,24 @@
-<template>
+<template>  
+  cur channel::{{ curChannel  }}
   <MsgList class="scroller"
            ref="msglistRef"
-           channel="1" />
+           :channel="curChannel" />
 
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue';
 import { randChat } from './randChatG';
 import MsgList from './MsgList.vue';
 import useChatStore from '@/store/modules/chatStore';
 const msglistRef = ref<any | null>(null)
-const { getConversation } = useChatStore()
+
+const curChannel = computed(() => {
+  return useChatStore().me?.id === 1 ? 2 : 1
+})
 
 onMounted(() => {
-  const conv = getConversation(1)
-  const timer = setInterval(() => {
-    conv.notify(Object.freeze(randChat(1)[0]))
-    msglistRef.value?.scrollToBottom()
-  }, 1000)
 
-  setTimeout(() => {
-    clearInterval(timer)
-    // msglistRef.value?.scrollToBottom()
-  }, 10000)
 })
 
 // idlecallback

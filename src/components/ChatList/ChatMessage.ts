@@ -1,4 +1,4 @@
-import type { Message } from './helpers/messageHelper'
+import { getMessageStr, type Message } from './helpers/messageHelper'
 
 export class MessageWarp {
   static _id = 0
@@ -22,7 +22,7 @@ export class MessageWarp {
 
   get text(): string {
     if (typeof this._msg.content === 'object') {
-      return `[NOT TEXT]`
+      return `[DEBUG] \n ${getMessageStr(this._msg)}` 
     }
     return this._msg.content
   }

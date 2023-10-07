@@ -110,6 +110,27 @@ export class Message {
     return this
   }
 }
+export function getMessageStr(msg: Message) { //this is dirty
+  console.log('this.flag: ', findFlagsByValue(msg.flag));
+  return `${findFlagsByValue(msg.flag).join('|')}\n ${msg.senderId} -> ${msg.receiverId} ${typeof msg.content === 'object' ? JSON.stringify(msg.content) : msg.content}`
+}
+function findFlagsByValue(value: number): string[] {
+  const flags: string[] = [];
+  
+  for (const [key, val] of Object.entries(MessageFlag)) {
+    if (typeof val === 'number' && (value & val) === val) {
+      if (key === 'NONE') {
+        continue;
+      }
+      flags.push(key);
+    }
+  }
+  if (flags.length === 0) {
+    flags.push('NONE');
+  }
+  
+  return flags;
+}
 
 export class MessageHelper {
   server_addr: string
@@ -540,6 +561,7 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
         console.log('connected: ', o);
         this.notifyNewMessage = useChatStore().updateConversation //TODO: this is for test only, delete this
         useChatStore().me = o
+        console.log('me: ', useChatStore().me);
         resolve()
       })
 
@@ -583,7 +605,10 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
   }
 
 
-  public getConversation(id: number): Conversation | undefined {
+  public getConversation(id: number): Conversation {
+    if (!this.conversationMap.has(id)) {
+      this.newConversation(id)
+    }
     return this.conversationMap.get(id)
   }
 

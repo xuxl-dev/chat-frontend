@@ -56,8 +56,6 @@ const useChatStore = defineStore('chatStore', () => {
     return conversations.get(id)!
   }
 
-
-
   return {
     getConversation,
     updateConversation,
