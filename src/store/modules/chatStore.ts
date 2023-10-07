@@ -12,8 +12,8 @@ const observationOptions = {
 export class Conversation {
   constructor() { }
 
-  chat = ref<(MessageWarp | Readonly<MessageWarp>)[]>([])
-  callback(entries: any, observer: any) {
+  chat = ref<MessageWarp[]>([])
+  callback = (entries: any, observer: any) => {
     entries.forEach((entry: any) => {
       if (entry.isIntersecting) {
         // console.log(`id:`, entry.target.getAttribute('msgid'), '进入可视区域')
