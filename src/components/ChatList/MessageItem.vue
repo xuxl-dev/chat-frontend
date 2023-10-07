@@ -18,12 +18,12 @@
         <div class="receipt"
              :class="{
                collapse: !isSelfMessage,
-               sent: receipt === 'sent',
-               read: receipt === 'read',
+               sent: receipt === 'DELIVERED',
+               read: receipt === 'READ',
              }
                ">
-          <Checked v-if="receipt === 'sent'" />
-          <DoubleChecked v-else-if="receipt === 'read'" />
+          <Checked v-if="receipt === 'DELIVERED'" />
+          <DoubleChecked v-else-if="receipt === 'READ'" />
         </div>
 
         <div class="read-count flex items-end"
@@ -52,7 +52,7 @@ onMounted(() => {
 
 const props = defineProps({
   message: {
-    type: MessageWarp,
+    type: Object as () => MessageWarp | Readonly<MessageWarp>,
     required: true,
   },
   sentBy: {
@@ -85,7 +85,7 @@ const emits = defineEmits(['click', 'sean']);
 const msg = ref(props.message);
 const isSelfMessage = computed(() => props.message.sender.id === me.id);
 const receipt = computed(() => {
-  return props.message.read ? 'read' : 'sent';
+  return props.message.status;
 });
 
 
