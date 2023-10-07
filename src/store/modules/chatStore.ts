@@ -10,7 +10,7 @@ const observationOptions = {
 }
 
 export class Conversation {
-  chat = ref([] as any)
+  chat = ref<(MessageWarp | Readonly<MessageWarp>)[]>([] as any)
   callback = (entries: any, observer: any) => {
     entries.forEach((entry: any) => {
       if (entry.isIntersecting) {
@@ -25,9 +25,9 @@ export class Conversation {
 
   observer = new IntersectionObserver(this.callback, observationOptions)
   map = new Map()
-  constructor() {}
+  constructor() { }
 
-  notify(msg: MessageWarp) {
+  notify(msg: MessageWarp | Readonly<MessageWarp>) {
     this.chat.value.push(msg)
     return this
   }
@@ -48,11 +48,10 @@ const useChatStore = defineStore('chatStore', () => {
   }
 
   const getConversation = (id: number) => {
-    console.log('getConversation', id)
     if (!conversations.has(id)) {
       conversations.set(id, new Conversation())
     }
-    return conversations.get(id)
+    return conversations.get(id)!
   }
 
   const me = ref({

@@ -28,7 +28,6 @@ const virtualListRef = ref<any | null>(null)
 let conv: Conversation
 onMounted(() => {
   conv = getConversation(+props.channel)
-  console.log(conv)
   watch(conv.chat, (newVal, oldVal) => {
     const newMsg = newVal.at(-1)
     append(newMsg)
@@ -59,8 +58,6 @@ const append = (message: MessageWarp) => {
       })
     }
   }
-  console.log(messageGroups.value)
-  // document.getElementById('vli')?.scrollTo(0, 999999)
 }
 
 const lastStack = () => {

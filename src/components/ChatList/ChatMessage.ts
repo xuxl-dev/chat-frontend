@@ -1,59 +1,43 @@
 import type { Message } from './helpers/messageHelper'
 
-export interface IMessage {
-  id: number
-  senderId: number
-  senderAvatar: string
-  receiverName?: string
-  text: string
-  read: boolean
-  group: boolean
-  readCount: number
-}
-
-export class MessageWarp implements IMessage {
+export class MessageWarp {
   static _id = 0
   id: number = MessageWarp._id++
-  senderId: number
-  senderAvatar: string
-  text: string
-  read: boolean
   group: boolean
-  readCount: number
-
   showAvatar: boolean;
-  [key: string]: any
+  
+  private _msg : Message
 
-  constructor(
-    senderId: number,
-    senderAvatar: string,
-    text: string | string,
-    read: boolean = false,
-    group: boolean = false,
-    readCount: number = 0
-  ) {
-    this.senderId = senderId // 发送者姓名
-    this.senderAvatar = senderAvatar // 发送者头像
-    this.text = text // 聊天文本内容
-    this.read = read // 是否已读
-    this.group = group // 是否为群组聊天
-    this.readCount = readCount // 已读计数（仅在群组聊天中使用）
-    this.showAvatar = true // 是否显示头像
-  }
+  private constructor() {}
 
   static fromMessage(message: Message): MessageWarp {
-    // if sender not exists, new a user
-    if (message.senderId && !User.has(message.senderId)) {
-      User.fromId(message.senderId) //TODO: implement this
+    const warp = new MessageWarp()
+    warp._msg = message
+    return warp
+  }
+
+  get senderId(): number {
+    return this._msg.senderId
+  }
+
+  get text(): string {
+    if (typeof this._msg.content === 'object') {
+      return `[NOT TEXT]`
     }
-    return new MessageWarp(
-      message.senderId,
-      message.receiverId + '',
-      message.content.toString(),
-      message.hasReadCount > 0,
-      message.flag === 1, //TODO: implement this
-      message.hasReadCount
-    )
+    return this._msg.content
+  }
+
+  get readCount(): number {
+    return this._msg.hasReadCount
+  }
+
+  get status(): 'DELIVERED' | 'READ' {
+    throw new Error('Not implemented') //TODO: implement this
+  }
+
+  get senderAvatar(): string {
+    // get from db
+    return '' //TODO: implement this
   }
 
   get sender(): User {

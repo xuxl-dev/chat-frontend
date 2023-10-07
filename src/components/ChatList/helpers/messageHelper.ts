@@ -11,7 +11,7 @@ export class CreateMessageDto {
 
 
 export enum MessageFlag {
-  'NONE' = 0,   
+  'NONE' = 0,
   'DO_NOT_STORE' = 1 << 0, // do not store this message in database, may fail to deliver
   'ACK' = 1 << 1, // this message is an ACK message
   'BROADCAST' = 1 << 2, // this message is a broadcast message
@@ -42,11 +42,29 @@ export class Message {
 
   sentAt: Date = new Date()
 
-  hasReadCount: number = 0
+  hasReadCount?: number
 
   flag: number = MessageFlag.NONE
 
-  constructor() { }
+  constructor(config?: {
+    msgId?: MsgId,
+    senderId?: number,
+    receiverId?: number,
+    content?: string | object,
+    sentAt?: Date,
+    hasReadCount?: number,
+    flag?: number,
+  }) {
+    if (config) {
+      this.msgId = config.msgId
+      this.senderId = config.senderId
+      this.receiverId = config.receiverId
+      this.content = config.content
+      this.sentAt = config.sentAt
+      this.hasReadCount = config.hasReadCount
+      this.flag = config.flag
+    }
+  }
 
   static ACK(toMessage: Message, type: ACKMsgType) {
     const msg = new Message()
@@ -128,7 +146,7 @@ export class MessageHelper {
     this._socket?.emit('message', msg)
   }
 
-  async quickMessage(content: object, msgFlag :number, to) {
+  async quickMessage(content: object, msgFlag: number, to) {
     const msg = new Message()
     msg.receiverId = to
     msg.content = JSON.stringify(content)
@@ -300,16 +318,16 @@ class Conversation extends EventEmitter {
   }
 
   async unableE2EE() {
-      this.ctx['isE2eePassive'] = false
-      const pubkey = this.ctx.messageHelper.cryptoHelper.getPublicKey()
-      await this.send(Message.new({
-        receiverId: this.group,
-        content: {
-          rsaPublicKey: pubkey, //TODO clean this
-          type: 'rsa-public-key'
-        },
-        flag: MessageFlag.KEY_EXCHANGE,
-      }))
+    this.ctx['isE2eePassive'] = false
+    const pubkey = this.ctx.messageHelper.cryptoHelper.getPublicKey()
+    await this.send(Message.new({
+      receiverId: this.group,
+      content: {
+        rsaPublicKey: pubkey, //TODO clean this
+        type: 'rsa-public-key'
+      },
+      flag: MessageFlag.KEY_EXCHANGE,
+    }))
   }
 }
 
@@ -362,7 +380,7 @@ class E2EEMessageReceiver implements MessageHandler {
       this.ctx.rsaPublicKey = content.rsaPublicKey;
       // send my rsa public key, and encrypted my aes key with the other side's rsa public key
 
-      if (this.ctx[isE2eePassiveToken] ?? true){
+      if (this.ctx[isE2eePassiveToken] ?? true) {
         this.ctx.sendMessage({
           rsaPublicKey: this.ctx.messageHelper.cryptoHelper.getPublicKey(),
           type: 'rsa-public-key'
@@ -449,11 +467,11 @@ type BakaMessagerConfig = {
 }
 
 
-export class BakaMessager extends EventEmitter implements IMessageHelper  {
+export class BakaMessager extends EventEmitter implements IMessageHelper {
   conversationMap = new Map<number, Conversation>()
   socket: Socket
   user: { [key: string]: any } | undefined;
-  private config : BakaMessagerConfig 
+  private config: BakaMessagerConfig
 
   constructor(config: BakaMessagerConfig) {
     super()
@@ -461,8 +479,8 @@ export class BakaMessager extends EventEmitter implements IMessageHelper  {
     this.switchUser(config.token) // this is ugly
   }
 
-  switchUser(token :string) {
-    if(this.socket?.connected) {
+  switchUser(token: string) {
+    if (this.socket?.connected) {
       this.socket.disconnect()
     }
     this.socket = io(this.config.server, {
@@ -536,7 +554,7 @@ export class BakaMessager extends EventEmitter implements IMessageHelper  {
     this.conversationMap.set(senderId, newConversation);
   }
 
-  async establishE2EE(to:number) {
+  async establishE2EE(to: number) {
     if (!this.conversationMap.get(to)) {
       this.newConversation(to)
     }
@@ -544,9 +562,9 @@ export class BakaMessager extends EventEmitter implements IMessageHelper  {
     await conversation.unableE2EE()
   }
 
-  
-  public getConversation(id: number) : Conversation | undefined {
+
+  public getConversation(id: number): Conversation | undefined {
     return this.conversationMap.get(id)
   }
-  
+
 }
