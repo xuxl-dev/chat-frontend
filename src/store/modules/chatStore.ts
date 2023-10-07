@@ -55,7 +55,7 @@ const useChatStore = defineStore('chatStore', () => {
   }
 
   const me = ref({
-    id: 1, //TODO: implement this
+    id: 2, //TODO: implement this
   })
 
   return {

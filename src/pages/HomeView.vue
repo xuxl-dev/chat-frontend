@@ -7,7 +7,7 @@ const server = ref('http://localhost:3001');
 const bkm = new BakaMessager({
   server: server.value,
   port: 3001,
-  token: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwidXNlcm5hbWUiOiJ1c2VyIiwicm9sZSI6InVzZXIiLCJpYXQiOjE2OTY0MDU2MzIsImV4cCI6MTY5NjU3ODQzMn0.wWTjb8nm2k5SMabC3_xw-oz6rfqgdYftPGIhXC9-EbQ`,
+  token: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwidXNlcm5hbWUiOiJ1c2VyIiwicm9sZSI6InVzZXIiLCJpYXQiOjE2OTY2NjQzOTIsImV4cCI6MTY5OTI1NjM5Mn0.Vz5xa46oyYX5pbIphpNeuOyXvWTfBlLNH_fvv5IF6Mc`,
 })
 
 onMounted(async () => {
