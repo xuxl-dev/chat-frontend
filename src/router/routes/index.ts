@@ -10,10 +10,15 @@ const Element = () => import('@/pages/demos/element/index.vue')
 
 const routes: RouteRecordRaw[] = [
   { path: '/:pathMatch(.*)*', name: 'NotFound', component: NotFind },
-  {
+  // {
+  //   path: '/',
+  //   name: 'home',
+  //   component: HomeView
+  // },
+    {
     path: '/',
     name: 'home',
-    component: HomeView
+    component: () => import('@/layout/menuIndex.vue')
   },
   {
     path: '/about',
