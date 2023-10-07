@@ -1,44 +1,63 @@
 <template>
-  <VirtualList dataPropName="stackedMessage"
-               :data="messageGroups"
+  <VirtualList :data="messageGroups"
                :data-key="getKey"
                :item="MessageStack"
                :size="20"
                class="scroll-smooth"
-               ref="virtualListRef"
-               id="vli" />
+               ref="virtualListRef" />
 </template>
 <script setup lang="ts">
-import { ref, onMounted, defineProps } from 'vue'
-import { Message, StackedMessage, mergeAdjacentMessages } from './ChatMessage';
+import { ref, onMounted, defineProps, watch } from 'vue'
+import { MessageWarp, StackedMessage, User } from './ChatMessage';
 import VirtualList from './VirtualList/index.tsx';
-import MessageStack from './MessageStack.vue';
-import useChatStore from '@/store/modules/chatStore';
-const getKey = (item: StackedMessage) => item.stack_id
-const { onMessagesUpdated } = useChatStore()
+import MessageStack, { type Source } from './MessageStack.vue';
+import useChatStore, { Conversation } from '@/store/modules/chatStore';
 
-const messageGroups = ref<StackedMessage[]>([]);
-const virtualListRef = ref<any | null>(null)
-
-onMessagesUpdated((msg) => {
-  append(msg)
+const props = defineProps({
+  channel: {
+    type: String,
+    required: true
+  }
 })
 
-const append = (message: Message) => {
+const getKey = (item: Source) => item.stack.stack_id
+const { getConversation } = useChatStore()
+
+const messageGroups = ref<Source[]>([]);
+const virtualListRef = ref<any | null>(null)
+let conv: Conversation
+onMounted(() => {
+  conv = getConversation(+props.channel)
+  watch(conv.chat, (newVal, oldVal) => {
+    const newMsg = newVal.at(-1)
+    append(newMsg)
+  }, { immediate: false, deep: true })
+  scrollToBottom()
+})
+
+const append = (message: MessageWarp) => {
   if (!lastStack()) {
-    messageGroups.value.push(new StackedMessage([message]))
-    return
+    messageGroups.value.push({
+      stack: new StackedMessage([message]),
+      sender: new User(
+        message.sender.id,
+        message.sender.name,
+        message.sender.avatar
+      ),
+      conversation: conv  //TODO: check type
+    })
   } else {
     const last = lastStack()!
-    if (last.sender === message.senderName) {
-      last.messages.push(message)
+    if (last.stack.sender.id === message.sender.id) {
+      last.stack.messages.push(message)
     } else {
-      messageGroups.value.push(new StackedMessage([message]))
+      messageGroups.value.push({
+        stack: new StackedMessage([message]),
+        sender: message.sender,
+        conversation: conv
+      })
     }
   }
-
-  // document.getElementById('vli')?.scrollTo(0, 999999)
-
 }
 
 const lastStack = () => {

@@ -1,24 +1,34 @@
 <template>
-  <div class="chat-message flex items-end pb-4 pt-5 h-full ">
-
-    <div class="message-body break-all ml-2 mr-2 whitespace-pre-wrap text-xl">
-      sentBy?.name:{{ sentBy?.name  }}
-      message.senderName: {{ message.senderName }}
+  <div class="chat-message flex items-end h-full"
+       ref="msgRef"
+       :msgid="message.id"
+       :class="{
+         'flex-row-reverse': !isSelfMessage,
+       }">
+    <div class="message-body break-words ml-2 mr-2 whitespace-pre-wrap text-xl"
+         :class="{
+           'message-bubble': !isSelfMessage,
+           'my-message-bubble': isSelfMessage,
+           'no-tail': displayStyle !== 'tail',
+           'left-tailed': displayStyle === 'tail' && !isSelfMessage,
+           'right-tailed': displayStyle === 'tail' && isSelfMessage,
+         }">
       {{ message.text }}
-      
-
-      <div class="flex flex-row items-center float-right">
-        <div class="receipt" :class="{
-          collapse: !isSelfMessage,
-          sent: receipt === 'sent',
-          read: receipt === 'read',
-        }">
+      <div class="flex float-right">
+        <div class="receipt"
+             :class="{
+               collapse: !isSelfMessage,
+               sent: receipt === 'sent',
+               read: receipt === 'read',
+             }
+               ">
           <Checked v-if="receipt === 'sent'" />
           <DoubleChecked v-else-if="receipt === 'read'" />
         </div>
 
-        <div class="read-count" v-if="message.group">
-          {{ message.readCount }}
+        <div class="read-count flex items-end"
+             v-if="message.group">
+          <span class="text-sm">{{ message.readCount }}</span>
         </div>
       </div>
     </div>
@@ -26,15 +36,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { Message, User } from './ChatMessage';
+import { ref, computed, onMounted } from 'vue';
+import { MessageWarp, User } from './ChatMessage';
 import Checked from './icons/Checked.vue';
 import DoubleChecked from './icons/DoubleChecked.vue';
-
+import useChatStore, { Conversation } from '@/store/modules/chatStore';
+const { me } = useChatStore()
+const msgRef = ref<HTMLElement | null>(null)
+onMounted(() => {
+  if (!msgRef.value) return
+  props.conversation.observer.observe(msgRef.value)
+  // console.log(props.message)
+  props.conversation.map.set(+props.message.id, setObservableState)
+})
 
 const props = defineProps({
   message: {
-    type: Message,
+    type: MessageWarp,
     required: true,
   },
   sentBy: {
@@ -42,7 +60,7 @@ const props = defineProps({
     required: false,
   },
   displayStyle: {
-    type: String,
+    type: String, // normal, tail
     required: false,
     default: 'normal',
   },
@@ -55,13 +73,36 @@ const props = defineProps({
     type: Boolean,
     required: false,
     default: true,
+  },
+  conversation: {
+    type: Conversation,
+    required: true,
   }
 });
+
+const emits = defineEmits(['click', 'sean']);
+
 const msg = ref(props.message);
-const isSelfMessage = computed(() => props.sentBy?.name === msg.value.senderName);
+const isSelfMessage = computed(() => props.message.sender.id === me.id);
 const receipt = computed(() => {
   return props.message.read ? 'read' : 'sent';
 });
+
+
+const canBeSeen = ref(false);
+const setObservableState = (state: boolean) => {
+  canBeSeen.value = state;
+};
+
+defineExpose({
+  msgRef,
+  msg,
+  isSelfMessage,
+  receipt,
+  canBeSeen,
+  setObservableState,
+});
+
 </script>
 <style scoped lang="scss">
 .collapsed {
@@ -95,7 +136,7 @@ const receipt = computed(() => {
 }
 
 $receipt-color: #72eda7;
-$read-color: #4caf50;
+$read-color: #72eda7;
 $font-size: 24px;
 
 .receipt {
@@ -114,7 +155,6 @@ $font-size: 24px;
 
 .read-count {
   font-size: 12px;
-  color: #888;
 }
 
 // 带尾巴的消息框样式
@@ -124,7 +164,9 @@ $font-size: 24px;
   border-radius: 10px;
   position: relative;
   color: black;
+}
 
+.left-tailed {
   &::before {
     content: "";
     position: absolute;
@@ -139,11 +181,27 @@ $font-size: 24px;
   }
 }
 
+.right-tailed {
+  &::before {
+    content: "";
+    position: absolute;
+    right: -10px;
+    bottom: 0px;
+    width: 0;
+    height: 0;
+    border-top: 10px solid transparent;
+    border-bottom: 10px solid transparent;
+    border-left: 10px solid #007bff;
+    transform: translateY(-50%);
+  }
+}
+
 // 没有尾巴的消息框样式
-.message-bubble-no-tail {
+.no-tail {
   color: black;
   padding: 10px;
   border-radius: 10px;
+  margin-bottom: 3px;
 
   &.normal {
     background-color: #e0e0e0;
@@ -163,17 +221,6 @@ $font-size: 24px;
   color: #fff;
   position: relative;
 
-  &::before {
-    content: "";
-    position: absolute;
-    right: -10px;
-    bottom: 0px;
-    width: 0;
-    height: 0;
-    border-top: 10px solid transparent;
-    border-bottom: 10px solid transparent;
-    border-left: 10px solid #007bff;
-    transform: translateY(-50%);
-  }
+
 }
 </style>

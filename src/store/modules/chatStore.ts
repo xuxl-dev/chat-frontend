@@ -1,41 +1,67 @@
-import type { Message } from '@/components/ChatList/ChatMessage'
+import { MessageWarp } from '@/components/ChatList/ChatMessage'
+import { Message } from '@/components/ChatList/helpers/messageHelper'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-const useChatStore = defineStore('storeId', () => {
-  const messages = ref<Message[]>([] as any)
+const observationOptions = {
+  root: null,
+  rootMargin: '0px',
+  threshold: 0.1
+}
 
-  const initMessages = (_messages: Message[]) => {
-    messages.value = _messages
-
-    callbacks['onMessageInit']?.forEach(callback => {
-      callback(messages.value)
+export class Conversation {
+  chat = ref<(MessageWarp | Readonly<MessageWarp>)[]>([] as any)
+  callback = (entries: any, observer: any) => {
+    entries.forEach((entry: any) => {
+      if (entry.isIntersecting) {
+        // console.log(`id:`, entry.target.getAttribute('msgid'), '进入可视区域')
+        this.map.get(+entry.target.getAttribute('msgid'))(true)
+      } else {
+        // console.log(`id:`, entry.target.getAttribute('msgid'), '离开可视区域')
+        this.map.get(+entry.target.getAttribute('msgid'))(false)
+      }
     })
   }
 
-  const appendMessage = (message: Message) => {
-    messages.value.push(message)
-    
-    callbacks['onMessagesUpdated']?.forEach(callback => {
-      callback(message)
-    })
+  observer = new IntersectionObserver(this.callback, observationOptions)
+  map = new Map()
+  constructor() { }
+
+  notify(msg: MessageWarp | Readonly<MessageWarp>) {
+    this.chat.value.push(msg)
+    return this
+  }
+}
+
+const useChatStore = defineStore('chatStore', () => {
+  const conversations: Map<number, Conversation> = new Map()
+
+  const updateConversation = (raw: Message) => {
+    if (conversations.has(raw.senderId)) {
+      conversations.get(raw.senderId).notify(MessageWarp.fromMessage(raw))
+    } else {
+      const conversation = new Conversation().notify(
+        MessageWarp.fromMessage(raw)
+      )
+      conversations.set(raw.senderId, conversation)
+    }
   }
 
-  const callbacks : {[key: string]: ((...args: any)=> any)[]} = {}
-  const onMessageInit = (callback: (messages: Message[]) => void) => {
-    callbacks['onMessageInit'] = callbacks['onMessageInit'] || []
-    callbacks['onMessageInit'].push(callback)
+  const getConversation = (id: number) => {
+    if (!conversations.has(id)) {
+      conversations.set(id, new Conversation())
+    }
+    return conversations.get(id)!
   }
-  const onMessagesUpdated = (callback: (message: Message) => void) => {
-    callbacks['onMessagesUpdated'] = callbacks['onMessagesUpdated'] || []
-    callbacks['onMessagesUpdated'].push(callback)
-  }
-  
+
+  const me = ref({
+    id: 1, //TODO: implement this
+  })
+
   return {
-    messages,
-    initMessages,
-    appendMessage,
-    onMessagesUpdated
+    getConversation,
+    updateConversation,
+    me
   }
 })
 

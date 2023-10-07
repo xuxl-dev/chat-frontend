@@ -1,76 +1,81 @@
+import type { Message } from './helpers/messageHelper'
 
-export interface IMessage {
-  id: number
-  senderName: string
-  senderAvatar: string
-  receiverName?: string
-  text: string
-  read: boolean
+export class MessageWarp {
+  static _id = 0
+  id: number = MessageWarp._id++
   group: boolean
-  readCount: number
-}
-
-export class Message implements IMessage {
-  id: number
-  senderName: string
-  senderAvatar: string
-  text: string
-  read: boolean
-  group: boolean
-  readCount: number
-
   showAvatar: boolean;
-  [key: string]: any
+  
+  private _msg : Message
 
-  constructor(
-    id: number,
-    senderName: string,
-    senderAvatar: string,
-    text: string | string,
-    read: boolean = false,
-    group: boolean = false,
-    readCount: number = 0
-  ) {
-    this.id = id // 消息ID
-    this.senderName = senderName // 发送者姓名
-    this.senderAvatar = senderAvatar // 发送者头像
-    this.text = text // 聊天文本内容
-    this.read = read // 是否已读
-    this.group = group // 是否为群组聊天
-    this.readCount = readCount // 已读计数（仅在群组聊天中使用）
-    this.showAvatar = true // 是否显示头像
+  private constructor() {}
+
+  static fromMessage(message: Message): MessageWarp {
+    const warp = new MessageWarp()
+    warp._msg = message
+    return warp
+  }
+
+  get senderId(): number {
+    return this._msg.senderId
+  }
+
+  get text(): string {
+    if (typeof this._msg.content === 'object') {
+      return `[NOT TEXT]`
+    }
+    return this._msg.content
+  }
+
+  get readCount(): number {
+    return this._msg.hasReadCount
+  }
+
+  get status(): 'DELIVERED' | 'READ' {
+    throw new Error('Not implemented') //TODO: implement this
+  }
+
+  get senderAvatar(): string {
+    // get from db
+    return '' //TODO: implement this
+  }
+
+  get sender(): User {
+    return User.fromId(+this.senderId)
   }
 }
 
 export class StackedMessage {
   static _stack_id = 0
   stack_id: number = StackedMessage._stack_id++
-  messages: Message[] = []
+  messages: MessageWarp[] = []
 
-  constructor(arr: Message[] = []) {
+  constructor(arr: MessageWarp[] = []) {
     this.messages = arr
   }
 
-  append(message: Message) {
+  append(message: MessageWarp) {
     this.messages.push(message)
   }
 
-  public get sender(): string {
-    return this.messages?.[0].senderName ?? ''
+  public get sender(): User {
+    return User.fromId(+this.messages[0].senderId)
   }
 }
 
-export function mergeAdjacentMessages(messages: Message[]): StackedMessage[] {
+export function mergeAdjacentMessages(
+  messages: MessageWarp[]
+): StackedMessage[] {
   const ret: StackedMessage[] = []
-  let lastSenderName = ''
+  let lastSenderId = -1
 
   messages.forEach((message) => {
-    if (message.senderName === lastSenderName) {
+    if (message.senderId === lastSenderId) {
       ret[ret.length - 1].append(message)
     } else {
       ret.push(new StackedMessage([message]))
     }
-    lastSenderName = message.senderName
+    lastSenderId = message.senderId
   })
 
   return ret
@@ -85,5 +90,21 @@ export class User {
     this.id = id
     this.name = name
     this.avatar = avatar
+  }
+
+  static _cache: Map<number, User> = new Map()
+
+  static fromId(id: number): User {
+    if (User._cache.has(id)) {
+      return User._cache.get(id)
+    } else {
+      const user = new User(id, 'uid' + id, '') // TODO: implement this
+      User._cache.set(id, user)
+      return user
+    }
+  }
+
+  static has(id: number): boolean {
+    return User._cache.has(id)
   }
 }
