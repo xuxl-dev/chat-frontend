@@ -1,7 +1,7 @@
 import { MessageWarp } from '@/components/ChatList/ChatMessage'
 import { Message } from '@/components/ChatList/helpers/messageHelper'
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, type Ref } from 'vue'
 
 const observationOptions = {
   root: null,
@@ -10,8 +10,10 @@ const observationOptions = {
 }
 
 export class Conversation {
-  chat = ref<(MessageWarp | Readonly<MessageWarp>)[]>([] as any)
-  callback = (entries: any, observer: any) => {
+  constructor() { }
+
+  chat = ref<(MessageWarp | Readonly<MessageWarp>)[]>([])
+  callback(entries: any, observer: any) {
     entries.forEach((entry: any) => {
       if (entry.isIntersecting) {
         // console.log(`id:`, entry.target.getAttribute('msgid'), '进入可视区域')
@@ -25,7 +27,6 @@ export class Conversation {
 
   observer = new IntersectionObserver(this.callback, observationOptions)
   map = new Map()
-  constructor() { }
 
   notify(msg: MessageWarp | Readonly<MessageWarp>) {
     this.chat.value.push(msg)

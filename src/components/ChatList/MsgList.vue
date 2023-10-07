@@ -7,11 +7,12 @@
                ref="virtualListRef" />
 </template>
 <script setup lang="ts">
-import { ref, onMounted, defineProps, watch } from 'vue'
+import { ref, onMounted, defineProps, watch, shallowRef } from 'vue';
 import { MessageWarp, StackedMessage, User } from './ChatMessage';
 import VirtualList from './VirtualList/index.tsx';
 import MessageStack, { type Source } from './MessageStack.vue';
 import useChatStore, { Conversation } from '@/store/modules/chatStore';
+import { testClass } from './MessageStack.vue';
 
 const props = defineProps({
   channel: {
@@ -23,7 +24,8 @@ const props = defineProps({
 const getKey = (item: Source) => item.stack.stack_id
 const { getConversation } = useChatStore()
 
-const messageGroups = ref<Source[]>([]);
+const messageGroups = shallowRef<Source[]>([]);
+const messageGroups2:Source[]  = [];
 const virtualListRef = ref<any | null>(null)
 let conv: Conversation
 onMounted(() => {
@@ -35,7 +37,7 @@ onMounted(() => {
   scrollToBottom()
 })
 
-const append = (message: MessageWarp) => {
+const append = (message: MessageWarp | Readonly<MessageWarp>) => {
   if (!lastStack()) {
     messageGroups.value.push({
       stack: new StackedMessage([message]),
@@ -44,8 +46,9 @@ const append = (message: MessageWarp) => {
         message.sender.name,
         message.sender.avatar
       ),
-      conversation: conv  //TODO: check type
+      conversation: conv
     })
+    
   } else {
     const last = lastStack()!
     if (last.stack.sender.id === message.sender.id) {
