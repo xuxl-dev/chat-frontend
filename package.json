@@ -24,8 +24,7 @@
     "vue": "^3.3.4",
     "vue-router": "^4.2.5",
     "vue-sticky-directive": "^0.0.10",
-    "vue-virtual-scroller": "2.0.0-beta.8",
-    "vuex": "^4.0.2"
+    "vue-virtual-scroller": "2.0.0-beta.8"
   },
   "devDependencies": {
     "@tsconfig/node18": "^2.0.1",
