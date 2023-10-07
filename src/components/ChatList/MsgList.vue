@@ -2,8 +2,6 @@
   <div>
     <VirtualList :data="messageGroups" :data-key="getKey" :item="MessageStack" :size="20" class="scroll-smooth"
       ref="virtualListRef" />
-  
-    <button @click="trigger">trigger</button>
   </div>
 </template>
 <script setup lang="ts">
@@ -12,9 +10,7 @@ import { MessageWarp, StackedMessage, User } from './ChatMessage';
 import VirtualList from './VirtualList/index.tsx';
 import MessageStack, { type Source } from './MessageStack.vue';
 import useChatStore, { Conversation } from '@/store/modules/chatStore';
-const trigger = () => {
-  triggerRef(messageGroups)
-}
+
 const props = defineProps({
   channel: {
     type: String,
@@ -32,7 +28,6 @@ onMounted(() => {
   conv = getConversation(+props.channel)
 
   watch(conv.chat, (newVal, oldVal) => {
-    console.log('new msg', messageGroups.value)
     const newMsg = newVal.at(-1)
     append(newMsg)
     triggerRef(messageGroups)
