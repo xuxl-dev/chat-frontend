@@ -13,6 +13,8 @@
            'left-tailed': displayStyle === 'tail' && !isSelfMessage,
            'right-tailed': displayStyle === 'tail' && isSelfMessage,
          }">
+         <button @click="console.log(message)">LogMe</button> <br>
+         <button @click="$props.message.triggerUpdate">UpdateMe</button> <br>
       {{ message.text }}
       <div class="flex float-right">
         <div class="receipt"
@@ -40,14 +42,19 @@ import { ref, computed, onMounted } from 'vue';
 import { MessageWarp, User } from './ChatMessage';
 import Checked from './icons/Checked.vue';
 import DoubleChecked from './icons/DoubleChecked.vue';
-import useChatStore, { Conversation } from '@/store/modules/chatStore';
+import useChatStore from '@/store/modules/chatStore';
+import { ChatSession } from '../../store/modules/chatStore';
 const { me } = useChatStore()
 const msgRef = ref<HTMLElement | null>(null)
 onMounted(() => {
   if (!msgRef.value) return
-  props.conversation.observer.observe(msgRef.value)
   // console.log(props.message)
+  if (props.conversation.map.has(+props.message.id) || !props.message.id) {
+    return
+  }
+  props.conversation.observer.observe(msgRef.value)
   props.conversation.map.set(+props.message.id, setObservableState)
+  console.log(props.conversation.map)
 })
 
 const props = defineProps({
@@ -67,7 +74,7 @@ const props = defineProps({
   showReadCount: {
     type: Boolean,
     required: false,
-    default: false,
+    default: true,
   },
   showReceipt: {
     type: Boolean,
@@ -75,7 +82,7 @@ const props = defineProps({
     default: true,
   },
   conversation: {
-    type: Conversation,
+    type: ChatSession,
     required: true,
   }
 });

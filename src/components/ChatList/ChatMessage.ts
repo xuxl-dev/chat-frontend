@@ -1,8 +1,12 @@
+import { triggerRef } from 'vue'
 import { getMessageStr, type Message } from './helpers/messageHelper'
+import useChatStore from '@/store/modules/chatStore'
+
+export const activeWarps: Map<string, MessageWarp> = new Map()
 
 export class MessageWarp {
   static _id = 0
-  id: number = MessageWarp._id++
+  tid: number = MessageWarp._id++
   group: boolean
   showAvatar: boolean;
   
@@ -13,7 +17,23 @@ export class MessageWarp {
   static fromMessage(message: Message): MessageWarp {
     const warp = new MessageWarp()
     warp._msg = message
+    if (message.msgId) {
+      console.log('set', message.msgId, warp)
+      activeWarps.set(message.msgId, warp)
+    } 
+    // these messages sent by me has no msgId,
+    // they are processed when sent is done, server will send back a msgId
+    
     return warp
+  }
+
+  static get(msgId: string) {
+    const activeWarp = activeWarps.get(msgId)
+    if (activeWarp) {
+      return activeWarp
+    }
+    // if not, try retrieve from local indexedDB, then server
+    throw new Error('Message not found')
   }
 
   get senderId(): number {
@@ -45,6 +65,29 @@ export class MessageWarp {
 
   get sender(): User {
     return User.fromId(+this.senderId)
+  }
+
+  get id() : string {
+    return this._msg.msgId
+  }
+
+  ack(type: 'read' | 'delivered' = 'read') {
+    console.log('@@ack', this._msg.msgId)
+
+    if (type === 'read') {
+      if (this._msg.hasReadCount > 0) {
+        this._msg.hasReadCount += 1
+      }
+      this._msg.hasReadCount = 1
+    } else {
+      this._msg.hasReadCount = 0
+    }
+    this.triggerUpdate()
+  }
+
+  triggerUpdate() {
+    //TODO: this has effencicy problem
+    useChatStore().getChatSession(this._msg.receiverId).refresh()
   }
 }
 

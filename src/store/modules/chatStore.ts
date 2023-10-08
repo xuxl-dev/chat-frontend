@@ -1,7 +1,10 @@
-import { MessageWarp, User } from '@/components/ChatList/ChatMessage'
-import { BakaMessager, Message } from '@/components/ChatList/helpers/messageHelper'
+import { MessageWarp, User, activeWarps } from '@/components/ChatList/ChatMessage'
+import { BakaMessager, Conversation, Message } from '@/components/ChatList/helpers/messageHelper'
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, triggerRef } from 'vue'
+import { BeginProcessorLayer, EndProcessorLayer, ProcessEndException, type ProcessorLayer } from './ChatProcessors/base'
+import { ACKUpdateLayer } from './ChatProcessors/ACKUpdateLayer'
+import instance from '../../apis/ajax';
 
 const observationOptions = {
   root: null,
@@ -18,28 +21,28 @@ const useChatStore = defineStore('chatStore', () => {
     token: token.value
   })
   const me = ref<User | null>(null)
-  const conversations: Map<number, Conversation> = new Map()
+  const conversations: Map<number, ChatSession> = new Map()
 
-  const updateConversation = (raw: Message) => {
+  const updateConversation = async (raw: Message) => {
     if (conversations.has(raw.senderId)) {
-      conversations.get(raw.senderId).notify(MessageWarp.fromMessage(raw))
+      conversations.get(raw.senderId).notify(raw)
     } else {
-      const conversation = new Conversation().notify(
-        MessageWarp.fromMessage(raw)
+      const conversation = await new ChatSession(raw.senderId).notify(
+        raw
       )
       conversations.set(raw.senderId, conversation)
     }
   }
 
-  const getConversation = (id: number) => {
+  const getChatSession = (id: number) => {
     if (!conversations.has(id)) {
-      conversations.set(id, new Conversation())
+      conversations.set(id, new ChatSession(id))
     }
     return conversations.get(id)!
   }
 
   return {
-    getConversation,
+    getChatSession,
     updateConversation,
     me,
     server,
@@ -47,12 +50,19 @@ const useChatStore = defineStore('chatStore', () => {
   }
 })
 
-const { bkm } = useChatStore()
 
-export class Conversation {
-  constructor() {}
+export class ChatSession {
+  bindingGroup: number
+  private conversation: Conversation
+
+  constructor(bindingGroup: number) {
+    this.bindingGroup = bindingGroup
+    this.conversation = useChatStore().bkm.getConversation(bindingGroup)
+    this.setNexts()
+  }
 
   chat = ref<MessageWarp[]>([])
+
   callback = (entries: any, observer: any) => {
     entries.forEach((entry: any) => {
       if (entry.isIntersecting) {
@@ -67,16 +77,46 @@ export class Conversation {
 
   observer = new IntersectionObserver(this.callback, observationOptions)
   map = new Map()
+  processors: ProcessorLayer[] = [
+    BeginProcessorLayer.instance,
+    ACKUpdateLayer.instance,
+    EndProcessorLayer.instance
+  ]
 
-  notify(msg: MessageWarp | Readonly<MessageWarp>) {
-    this.chat.value.push(msg)
+  private setNexts() {
+    for (let i = 0; i < this.processors.length - 1; i++) {
+      this.processors[i].next = this.processors[i + 1].process;
+    }
+  }
+
+  async notify(msg: Message | Readonly<Message>) {
+    try {
+      await this.processors[0].process(msg)
+    } catch (e) {
+      if (e instanceof ProcessEndException) {
+        return // this is normal
+      } else {
+        throw e
+      }
+    }
+    console.log('notify and pushed', msg)
+    // this is a processed message, and shall display
+    this.chat.value.push(MessageWarp.fromMessage(msg))
     return this
   }
 
-  send(msg: Message) {
-    this.chat.value.push(MessageWarp.fromMessage(msg))
-    bkm.sendMessage(msg)
-    return this
+  refresh() {
+    console.log('refresh', this.chat.value)
+    triggerRef(this.chat)
+  }
+
+  async send(msg: Message) {
+    const sentMsgAck = await this.conversation.send(msg)
+    const warp = MessageWarp.fromMessage(msg)
+    activeWarps.set((sentMsgAck as any).content.ackMsgId, warp)
+    this.chat.value.push(warp)
+    msg.msgId = (sentMsgAck as any).content.ackMsgId
+    return msg
   }
 }
 

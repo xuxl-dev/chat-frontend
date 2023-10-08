@@ -7,7 +7,9 @@ enum userMetaApi {
 }
 
 export async function getStatus(userId: number) : Promise<'ONLINE' | 'OFFLINE' | 'UNKNOWN'> {
-  return await defHttp.post(prefix + userMetaApi.status, {
+  const ret = (await defHttp.post(prefix + userMetaApi.status, {
     userId
-  })
+  })).data.status
+
+  return ret
 }

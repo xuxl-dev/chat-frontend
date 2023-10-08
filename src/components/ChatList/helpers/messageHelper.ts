@@ -2,7 +2,8 @@ import { Socket, io } from 'socket.io-client'
 import { CryptoHelper } from './cipher'
 import EventEmitter from 'eventemitter3'
 import useChatStore from '@/store/modules/chatStore'
-import { MessageWarp } from '../ChatMessage'
+import { randBetween } from '@/utils/utils'
+
 export class CreateMessageDto {
   receiverId!: number
   content!: string | object
@@ -22,6 +23,10 @@ export enum MessageFlag {
   //...
 }
 
+export function isFlagSet(flag: number, message: Message) {
+  return !!(message.flag & flag)
+}
+
 export enum ACKMsgType {
   'DELIVERED',
   'RECEIVED',
@@ -37,7 +42,7 @@ export class Message {
 
   receiverId: number
 
-  content: string | object
+  content: string | { [key: string]: any }
 
   sentAt: Date = new Date()
 
@@ -111,12 +116,9 @@ export class Message {
 }
 export function getMessageStr(msg: Message) {
   //this is dirty
-  console.log('this.flag: ', findFlagsByValue(msg.flag))
-  return `${findFlagsByValue(msg.flag).join('|')}\n ${msg.senderId} -> ${
-    msg.receiverId
-  } ${
-    typeof msg.content === 'object' ? JSON.stringify(msg.content) : msg.content
-  }`
+  return `${findFlagsByValue(msg.flag).join('|')}\n ${msg.senderId} -> ${msg.receiverId
+    } ${typeof msg.content === 'object' ? JSON.stringify(msg.content) : msg.content
+    }`
 }
 function findFlagsByValue(value: number): string[] {
   const flags: string[] = []
@@ -274,6 +276,7 @@ interface MessageHandler {
   handler: (msg: Message) => any | Promise<any>
   ctx: ConversationCtx
   passthrough?: boolean // default false
+  parallel?: boolean // default false
 }
 
 export function formatMessage(msg: Message) {
@@ -304,17 +307,17 @@ interface IMessageHelper {
     msgFlag: MessageFlag,
     to: number
   ): any | Promise<any>
-  sendMessage(msg: Message): any | Promise<any>
+  sendMessage(msg: Message): Message | Promise<Message>
   cryptoHelper: CryptoHelper
 }
 
 
-class Conversation extends EventEmitter {
+export class Conversation extends EventEmitter {
   public group: number
   private receive_pipeline: MessageHandler[] = []
   private send_pipeline: MessageHandler[] = []
   private ctx: ConversationCtx
-
+  private notifyNewMessage = useChatStore().updateConversation
   constructor(group: number, messageHelper: IMessageHelper) {
     super()
     this.group = group
@@ -341,7 +344,11 @@ class Conversation extends EventEmitter {
     if (this.shallAcceptPredicate(message)) {
       for (const handler of this.receive_pipeline) {
         if (handler.pattern(message)) {
-          await handler.handler(message)
+          if (handler.parallel) {
+            handler.handler(message)
+          } else {
+            await handler.handler(message)
+          }
           if (!handler.passthrough) {
             break
           }
@@ -352,6 +359,7 @@ class Conversation extends EventEmitter {
         await this.receiverFallback(message)
       }
     }
+    await this.notifyNewMessage(message) //TODO: this is for test only, delete this
   }
 
   /**
@@ -368,7 +376,7 @@ class Conversation extends EventEmitter {
         }
       }
     }
-    this.ctx.messageHelper.sendMessage(message)
+    return this.ctx.messageHelper.sendMessage(message)
   }
 
   public registerPipeline(handler: MessageHandler, type: 'receive' | 'send') {
@@ -522,6 +530,11 @@ class MessageReceiver implements MessageHandler {
     return !(msg.flag & MessageFlag.ACK)
   }
   handler: (msg: Message) => any = async (msg) => {
+    // pretent to wait for 1 second
+    await new Promise((resolve) => {
+      setTimeout(resolve, randBetween(500, 2000))
+    })
+
     await this.ctx.sendMessage(
       {
         ackMsgId: msg.msgId,
@@ -531,11 +544,11 @@ class MessageReceiver implements MessageHandler {
     )
 
     // pretent to wait for 1 second
-    // await new Promise((resolve) => {
-    //   setTimeout(resolve, 1000)
-    // })
+    await new Promise((resolve) => {
+      setTimeout(resolve, randBetween(500, 3000))
+    })
 
-    await this.ctx.sendMessage(
+    await this.ctx.sendMessage( //TODO implement read
       {
         ackMsgId: msg.msgId,
         type: ACKMsgType.READ
@@ -545,6 +558,7 @@ class MessageReceiver implements MessageHandler {
   }
   ctx: ConversationCtx
   passthrough?: boolean = true
+  parallel?: boolean = true // this handler can be parallel
 }
 
 const defaultPipeline = {
@@ -576,7 +590,7 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
   constructor(config: BakaMessagerConfig) {
     super()
     this.config = config
-    this.switchUser(config.token) // this is ugly
+    this.switchUser(config.token)
   }
 
   switchUser(token: string) {
@@ -607,10 +621,13 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
     )
   }
 
-  sendMessage(msg: Message) {
-    console.log('sent message: ', msg)
-    this.socket.emit('message', msg)
-    this.emit('message', msg)
+  async sendMessage(msg: Message) {
+    return new Promise<Message>((resolve, reject) => { //TODO, add timeout
+      console.log('sent message: ', msg)
+      this.socket.emit('message', msg, (ret: Message) => {
+        resolve(ret as Message)
+      })
+    })
   }
 
   cryptoHelper: CryptoHelper = new CryptoHelper()
@@ -621,9 +638,8 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
       this.socket.on('connected', (o) => {
         this.user = o
         console.log('connected: ', o)
-        this.notifyNewMessage = useChatStore().updateConversation //TODO: this is for test only, delete this
+        // this.notifyNewMessage = useChatStore().updateConversation //TODO: this is for test only, delete this
         useChatStore().me = o
-        console.log('me: ', useChatStore().me)
         resolve()
       })
 
@@ -641,13 +657,13 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
       })
     })
   }
-  notifyNewMessage: (message: Message) => void
+  // notifyNewMessage: (message: Message) => void
   private handleMessage(msg: Message) {
     if (!this.conversationMap.has(msg.senderId)) {
       this.newConversation(msg.senderId)
     }
     this.conversationMap.get(msg.senderId).notify(msg)
-    this.notifyNewMessage(msg) //TODO: this is for test only, delete this
+    // this.notifyNewMessage(msg) //TODO: this is for test only, delete this
   }
 
   private newConversation(senderId: number) {
