@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue'
 import ChatList from '@/components/ChatList/index.vue';
 import { BakaMessager, Message } from '@/components/ChatList/helpers/messageHelper';
 import useChatStore from '@/store/modules/chatStore';
-
+import { getStatus } from "@/apis/modules/userMeta";
 const server = ref('http://localhost:3001');
 const bkm = new BakaMessager({
   server: server.value,
@@ -12,7 +12,12 @@ const bkm = new BakaMessager({
 })
 
 onMounted(async () => {
-  await bkm.init()
+ console.log(`store`, useChatStore().me)
+  if (await getStatus(1) === 'OFFLINE') {
+    await bkm.init()
+  } else {
+    await switchUser()
+  }
   console.log(bkm.user)
 })
 

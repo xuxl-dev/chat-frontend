@@ -5,7 +5,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ref, onMounted, watch, shallowRef, triggerRef } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { MessageWarp, StackedMessage, User } from './ChatMessage';
 import VirtualList from './VirtualList/index.tsx';
 import MessageStack, { type Source } from './MessageStack.vue';

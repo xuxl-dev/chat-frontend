@@ -18,7 +18,16 @@ const curChannel = computed(() => {
 })
 
 onMounted(() => {
+  // const conv = useChatStore().getConversation(curChannel.value)
+  // const timer = setInterval(() => {
+  //   conv.notify(Object.freeze(randChat(1)[0]))
+  //   msglistRef.value?.scrollToBottom()
+  // }, 1000)
 
+  // setTimeout(() => {
+  //   clearInterval(timer)
+  //   // msglistRef.value?.scrollToBottom()
+  // }, 10000)
 })
 
 // idlecallback
