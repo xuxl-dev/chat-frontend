@@ -1,14 +1,14 @@
-import { Socket, io } from 'socket.io-client';
-import { CryptoHelper } from './cipher';
-import EventEmitter from 'eventemitter3';
-import useChatStore from '@/store/modules/chatStore';
-import { MessageWarp } from '../ChatMessage';
+import { Socket, io } from 'socket.io-client'
+import { CryptoHelper } from './cipher'
+import EventEmitter from 'eventemitter3'
+import useChatStore from '@/store/modules/chatStore'
+import { randBetween } from '@/utils/utils'
+
 export class CreateMessageDto {
   receiverId!: number
   content!: string | object
   flag!: MessageFlag
 }
-
 
 export enum MessageFlag {
   'NONE' = 0,
@@ -23,10 +23,14 @@ export enum MessageFlag {
   //...
 }
 
+export function isFlagSet(flag: number, message: Message) {
+  return !!(message.flag & flag)
+}
+
 export enum ACKMsgType {
   'DELIVERED',
   'RECEIVED',
-  'READ',
+  'READ'
 }
 
 export type MsgId = string
@@ -38,7 +42,7 @@ export class Message {
 
   receiverId: number
 
-  content: string | object
+  content: string | { [key: string]: any }
 
   sentAt: Date = new Date()
 
@@ -47,13 +51,13 @@ export class Message {
   flag: number = MessageFlag.NONE
 
   constructor(config?: {
-    msgId?: MsgId,
-    senderId?: number,
-    receiverId?: number,
-    content?: string | object,
-    sentAt?: Date,
-    hasReadCount?: number,
-    flag?: number,
+    msgId?: MsgId
+    senderId?: number
+    receiverId?: number
+    content?: string | object
+    sentAt?: Date
+    hasReadCount?: number
+    flag?: number
   }) {
     if (config) {
       this.msgId = config.msgId
@@ -71,7 +75,7 @@ export class Message {
     msg.flag = MessageFlag.ACK
     msg.content = {
       ackMsgId: toMessage.msgId.toString(),
-      type,
+      type
     }
     msg.receiverId = toMessage.senderId
     msg.senderId = toMessage.receiverId
@@ -110,26 +114,28 @@ export class Message {
     return this
   }
 }
-export function getMessageStr(msg: Message) { //this is dirty
-  console.log('this.flag: ', findFlagsByValue(msg.flag));
-  return `${findFlagsByValue(msg.flag).join('|')}\n ${msg.senderId} -> ${msg.receiverId} ${typeof msg.content === 'object' ? JSON.stringify(msg.content) : msg.content}`
+export function getMessageStr(msg: Message) {
+  //this is dirty
+  return `${findFlagsByValue(msg.flag).join('|')}\n ${msg.senderId} -> ${msg.receiverId
+    } ${typeof msg.content === 'object' ? JSON.stringify(msg.content) : msg.content
+    }`
 }
 function findFlagsByValue(value: number): string[] {
-  const flags: string[] = [];
-  
+  const flags: string[] = []
+
   for (const [key, val] of Object.entries(MessageFlag)) {
     if (typeof val === 'number' && (value & val) === val) {
       if (key === 'NONE') {
-        continue;
+        continue
       }
-      flags.push(key);
+      flags.push(key)
     }
   }
   if (flags.length === 0) {
-    flags.push('NONE');
+    flags.push('NONE')
   }
-  
-  return flags;
+
+  return flags
 }
 
 export class MessageHelper {
@@ -149,28 +155,28 @@ export class MessageHelper {
     this._socket = io(this.server_addr, {
       port: this.port,
       extraHeaders: {
-        authorization: this.token,
+        authorization: this.token
       },
       auth: {
         token: this.token
       },
-      autoConnect: true,
-    });
+      autoConnect: true
+    })
     this._socket.connect()
     this._socket.once('connected', (o) => {
       this.user = o
     })
     return new Promise<void>((resolve, reject) => {
       this._socket?.once('connect', () => {
-        console.log('successfully connected to server!');
+        console.log('successfully connected to server!')
         this._socket?.off('connect_error')
         resolve()
-      });
+      })
       this._socket?.once('connect_error', (error) => {
-        console.error('Connection error:', error.message);
+        console.error('Connection error:', error.message)
         this._socket?.off('connect')
         reject(error)
-      });
+      })
     })
   }
 
@@ -191,25 +197,41 @@ export class MessageHelper {
     this._socket?.emit('message', msg)
   }
 
-  subscribe(channel: string, callback: (msg: object) => void | PromiseLike<void>) {
+  subscribe(
+    channel: string,
+    callback: (msg: object) => void | PromiseLike<void>
+  ) {
     if (!this.onMsgCallbacks.has(channel)) {
       this.onMsgCallbacks.set(channel, [])
       this._socket?.on(channel, (msg: object) => {
-        this.onMsgCallbacks.get(channel)?.forEach(cb => cb(msg))
+        this.onMsgCallbacks.get(channel)?.forEach((cb) => cb(msg))
       })
     }
     this.onMsgCallbacks.get(channel).push(callback)
   }
 
-  subscribeOnce(channel: string, callback: (msg: object) => void | PromiseLike<void>) {
+  subscribeOnce(
+    channel: string,
+    callback: (msg: object) => void | PromiseLike<void>
+  ) {
     this._socket?.once(channel, callback)
   }
 
-  unsubscribe(channel: string, callback: (msg: object) => void | PromiseLike<void>) {
-    this.onMsgCallbacks.set(channel, this.onMsgCallbacks.get(channel)?.filter(cb => cb !== callback))
+  unsubscribe(
+    channel: string,
+    callback: (msg: object) => void | PromiseLike<void>
+  ) {
+    this.onMsgCallbacks.set(
+      channel,
+      this.onMsgCallbacks.get(channel)?.filter((cb) => cb !== callback)
+    )
   }
 
-  onPredicate(channel: string, predicate: (msg: object) => boolean, callback: (msg: object) => void | PromiseLike<void>) {
+  onPredicate(
+    channel: string,
+    predicate: (msg: object) => boolean,
+    callback: (msg: object) => void | PromiseLike<void>
+  ) {
     this.subscribe(channel, (msg) => {
       if (predicate(msg)) {
         callback(msg)
@@ -217,7 +239,11 @@ export class MessageHelper {
     })
   }
 
-  onPredicateOnce(channel: string, predicate: (msg: object) => boolean, callback: (msg: object) => void | PromiseLike<void>) {
+  onPredicateOnce(
+    channel: string,
+    predicate: (msg: object) => boolean,
+    callback: (msg: object) => void | PromiseLike<void>
+  ) {
     this.subscribeOnce(channel, (msg) => {
       if (predicate(msg)) {
         callback(msg)
@@ -240,7 +266,7 @@ export class MessageHelper {
   public get socket(): Socket {
     return this._socket
   }
-  cryptoHelper = new CryptoHelper();
+  cryptoHelper = new CryptoHelper()
   rsaPublicKey = this.cryptoHelper.getPublicKey()
   isPassive = true
 }
@@ -250,6 +276,7 @@ interface MessageHandler {
   handler: (msg: Message) => any | Promise<any>
   ctx: ConversationCtx
   passthrough?: boolean // default false
+  parallel?: boolean // default false
 }
 
 export function formatMessage(msg: Message) {
@@ -258,8 +285,7 @@ export function formatMessage(msg: Message) {
     let newContent: any
     try {
       newContent = JSON.parse(msg.content)
-    }
-    catch (e) {
+    } catch (e) {
       newContent = msg.content
     }
     msg.content = newContent
@@ -267,26 +293,31 @@ export function formatMessage(msg: Message) {
 }
 
 type ConversationCtx = {
-  [key: string]: any,
-  messageHelper: IMessageHelper,
-  sendMessage: (msg: object, flag: MessageFlag) => any | Promise<any>,
-  unregisterPipeline: (handler: MessageHandler) => void,
-  registerPipeline: (handler: MessageHandler, type: 'receive' | 'send') => void,
-  conversation: Conversation,
+  [key: string]: any
+  messageHelper: IMessageHelper
+  sendMessage: (msg: object, flag: MessageFlag) => any | Promise<any>
+  unregisterPipeline: (handler: MessageHandler) => void
+  registerPipeline: (handler: MessageHandler, type: 'receive' | 'send') => void
+  conversation: Conversation
 }
 
 interface IMessageHelper {
-  quickMessage(content: object, msgFlag: MessageFlag, to: number): any | Promise<any>
-  message(msg: Message): any | Promise<any>
+  quickMessage(
+    content: object,
+    msgFlag: MessageFlag,
+    to: number
+  ): any | Promise<any>
+  sendMessage(msg: Message): Message | Promise<Message>
   cryptoHelper: CryptoHelper
 }
 
-class Conversation extends EventEmitter {
+
+export class Conversation extends EventEmitter {
   public group: number
   private receive_pipeline: MessageHandler[] = []
   private send_pipeline: MessageHandler[] = []
   private ctx: ConversationCtx
-
+  private notifyNewMessage = useChatStore().updateConversation
   constructor(group: number, messageHelper: IMessageHelper) {
     super()
     this.group = group
@@ -302,7 +333,7 @@ class Conversation extends EventEmitter {
         this.registerPipeline(handler, type)
       },
       isE2eePassive: true,
-      conversation: this,
+      conversation: this
     }
   }
 
@@ -313,7 +344,11 @@ class Conversation extends EventEmitter {
     if (this.shallAcceptPredicate(message)) {
       for (const handler of this.receive_pipeline) {
         if (handler.pattern(message)) {
-          await handler.handler(message)
+          if (handler.parallel) {
+            handler.handler(message)
+          } else {
+            await handler.handler(message)
+          }
           if (!handler.passthrough) {
             break
           }
@@ -324,10 +359,11 @@ class Conversation extends EventEmitter {
         await this.receiverFallback(message)
       }
     }
+    await this.notifyNewMessage(message) //TODO: this is for test only, delete this
   }
 
   /**
-   * 
+   *
    * @param message  in message, `receiverId` is overwritten by conversation's group
    */
   public async send(message: Message) {
@@ -340,7 +376,7 @@ class Conversation extends EventEmitter {
         }
       }
     }
-    this.ctx.messageHelper.message(message)
+    return this.ctx.messageHelper.sendMessage(message)
   }
 
   public registerPipeline(handler: MessageHandler, type: 'receive' | 'send') {
@@ -354,44 +390,58 @@ class Conversation extends EventEmitter {
   }
 
   public unregisterPipeline(handler: MessageHandler) {
-    this.receive_pipeline = this.receive_pipeline.filter(h => h !== handler)
-    this.send_pipeline = this.send_pipeline.filter(h => h !== handler)
+    this.receive_pipeline = this.receive_pipeline.filter((h) => h !== handler)
+    this.send_pipeline = this.send_pipeline.filter((h) => h !== handler)
   }
 
   async unableE2EE() {
     this.ctx['isE2eePassive'] = false
     const pubkey = this.ctx.messageHelper.cryptoHelper.getPublicKey()
-    await this.send(Message.new({
-      receiverId: this.group,
-      content: {
-        rsaPublicKey: pubkey, //TODO clean this
-        type: 'rsa-public-key'
-      },
-      flag: MessageFlag.KEY_EXCHANGE,
-    }))
+    await this.send(
+      Message.new({
+        receiverId: this.group,
+        content: {
+          rsaPublicKey: pubkey, //TODO clean this
+          type: 'rsa-public-key'
+        },
+        flag: MessageFlag.KEY_EXCHANGE
+      })
+    )
   }
 }
 
 enum E2EEStatus {
   'LISTEN_PUB_KEY',
   'LISTEN_AES_KEY',
-  'READY',
+  'READY'
 }
 
-const isE2eePassiveToken = 'isE2eePassive';
+const isE2eePassiveToken = 'isE2eePassive'
 class E2EEMessageReceiver implements MessageHandler {
   status = E2EEStatus.LISTEN_PUB_KEY
   passthrough = true
 
   handlerMap = new Map<E2EEStatus, (msg: Message) => any | Promise<any>>([
-    [E2EEStatus.LISTEN_PUB_KEY, (msg) => {
-      const content = msg.content as unknown as { rsaPublicKey: string, type: "rsa-public-key" }
-      this.handlePubKeyPhase(content);
-    }],
-    [E2EEStatus.LISTEN_AES_KEY, (msg) => {
-      const content = msg.content as unknown as { encryptedAESKey: string, type: "encrypted-aes-key" }
-      this.handleAESKeyPhase(content);
-    }]
+    [
+      E2EEStatus.LISTEN_PUB_KEY,
+      (msg) => {
+        const content = msg.content as unknown as {
+          rsaPublicKey: string
+          type: 'rsa-public-key'
+        }
+        this.handlePubKeyPhase(content)
+      }
+    ],
+    [
+      E2EEStatus.LISTEN_AES_KEY,
+      (msg) => {
+        const content = msg.content as unknown as {
+          encryptedAESKey: string
+          type: 'encrypted-aes-key'
+        }
+        this.handleAESKeyPhase(content)
+      }
+    ]
   ])
 
   ctx: ConversationCtx
@@ -402,42 +452,53 @@ class E2EEMessageReceiver implements MessageHandler {
     await this.handlerMap.get(this.status)?.(msg)
   }
 
-
-  private handleAESKeyPhase(content: { encryptedAESKey: string; type: "encrypted-aes-key"; }) {
+  private handleAESKeyPhase(content: {
+    encryptedAESKey: string
+    type: 'encrypted-aes-key'
+  }) {
     if (content) {
-      this.cipher.decryptAndSaveAESKey(content.encryptedAESKey);
-      this.status = E2EEStatus.READY;
+      this.cipher.decryptAndSaveAESKey(content.encryptedAESKey)
+      this.status = E2EEStatus.READY
       this.ctx.unregisterPipeline(this)
       // register e2ee sender
       this.ctx.registerPipeline(new E2EEMessageSender(), 'send')
       this.ctx.conversation.emit('e2ee-ready')
     } else {
-      throw new Error('unexpected message');
+      throw new Error('unexpected message')
     }
   }
 
-  private handlePubKeyPhase(content: { rsaPublicKey: string; type: "rsa-public-key"; }) {
+  private handlePubKeyPhase(content: {
+    rsaPublicKey: string
+    type: 'rsa-public-key'
+  }) {
     if (content) {
-      this.ctx.rsaPublicKey = content.rsaPublicKey;
+      this.ctx.rsaPublicKey = content.rsaPublicKey
       // send my rsa public key, and encrypted my aes key with the other side's rsa public key
 
       if (this.ctx[isE2eePassiveToken] ?? true) {
-        this.ctx.sendMessage({
-          rsaPublicKey: this.ctx.messageHelper.cryptoHelper.getPublicKey(),
-          type: 'rsa-public-key'
-        }, MessageFlag.KEY_EXCHANGE);
+        this.ctx.sendMessage(
+          {
+            rsaPublicKey: this.ctx.messageHelper.cryptoHelper.getPublicKey(),
+            type: 'rsa-public-key'
+          },
+          MessageFlag.KEY_EXCHANGE
+        )
       }
 
-      this.cipher.setBobPublicKey(content.rsaPublicKey);
+      this.cipher.setBobPublicKey(content.rsaPublicKey)
 
-      this.ctx.sendMessage({
-        encryptedAESKey: this.cipher.getEncryptedAESKey(),
-        type: 'encrypted-aes-key'
-      }, MessageFlag.KEY_EXCHANGE);
+      this.ctx.sendMessage(
+        {
+          encryptedAESKey: this.cipher.getEncryptedAESKey(),
+          type: 'encrypted-aes-key'
+        },
+        MessageFlag.KEY_EXCHANGE
+      )
 
-      this.status = E2EEStatus.LISTEN_AES_KEY;
+      this.status = E2EEStatus.LISTEN_AES_KEY
     } else {
-      throw new Error('unexpected message');
+      throw new Error('unexpected message')
     }
   }
 
@@ -453,9 +514,11 @@ class E2EEMessageSender implements MessageHandler {
       throw new Error('bob_aes is not ready')
     }
     //TODO check string or object
-    msg.content = this.ctx.messageHelper.cryptoHelper.encryptMessage(msg.content as string)
+    msg.content = this.ctx.messageHelper.cryptoHelper.encryptMessage(
+      msg.content as string
+    )
   }
-  ctx: ConversationCtx;
+  ctx: ConversationCtx
   passthrough?: boolean = true
 }
 
@@ -467,57 +530,67 @@ class MessageReceiver implements MessageHandler {
     return !(msg.flag & MessageFlag.ACK)
   }
   handler: (msg: Message) => any = async (msg) => {
-    await this.ctx.sendMessage({
-      ackMsgId: msg.msgId,
-      type: ACKMsgType.RECEIVED
-    }, MessageFlag.ACK)
+    // pretent to wait for 1 second
+    await new Promise((resolve) => {
+      setTimeout(resolve, randBetween(500, 2000))
+    })
+
+    await this.ctx.sendMessage(
+      {
+        ackMsgId: msg.msgId,
+        type: ACKMsgType.RECEIVED
+      },
+      MessageFlag.ACK
+    )
 
     // pretent to wait for 1 second
-    // await new Promise((resolve) => {
-    //   setTimeout(resolve, 1000)
-    // })
+    await new Promise((resolve) => {
+      setTimeout(resolve, randBetween(500, 3000))
+    })
 
-    await this.ctx.sendMessage({
-      ackMsgId: msg.msgId,
-      type: ACKMsgType.READ
-    }, MessageFlag.ACK)
+    await this.ctx.sendMessage( //TODO implement read
+      {
+        ackMsgId: msg.msgId,
+        type: ACKMsgType.READ
+      },
+      MessageFlag.ACK
+    )
   }
-  ctx: ConversationCtx;
+  ctx: ConversationCtx
   passthrough?: boolean = true
+  parallel?: boolean = true // this handler can be parallel
 }
-
 
 const defaultPipeline = {
   send: [],
-  receive: [MessageReceiver, E2EEMessageReceiver],
+  receive: [MessageReceiver, E2EEMessageReceiver]
 }
 
 function InjectDefaultPipeline(conversation: Conversation) {
-  defaultPipeline.receive.forEach(handler => {
+  defaultPipeline.receive.forEach((handler) => {
     conversation.registerPipeline(new handler(), 'receive')
   })
-  defaultPipeline.send.forEach(handler => {
+  defaultPipeline.send.forEach((handler) => {
     conversation.registerPipeline(new handler(), 'send')
   })
 }
 
 type BakaMessagerConfig = {
-  server: string,
-  port: number,
-  token: string,
+  server: string
+  port: number
+  token: string
 }
-
 
 export class BakaMessager extends EventEmitter implements IMessageHelper {
   conversationMap = new Map<number, Conversation>()
   socket: Socket
-  user: { [key: string]: any } | undefined;
+  user: { [key: string]: any } | undefined
   private config: BakaMessagerConfig
 
   constructor(config: BakaMessagerConfig) {
     super()
     this.config = config
-    this.switchUser(config.token) // this is ugly
+    this.switchUser(config.token)
   }
 
   switchUser(token: string) {
@@ -531,24 +604,30 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
         token
       },
       extraHeaders: {
-        authorization: token,
+        authorization: token
       },
-      transports: ['websocket'],
-    });
+      transports: ['websocket']
+    })
   }
 
   quickMessage(content: object, flag: MessageFlag, to: number) {
-    this.socket.emit('message', Message.new({
-      receiverId: to,
-      content: content,
-      flag: flag,
-    }))
+    this.socket.emit(
+      'message',
+      Message.new({
+        receiverId: to,
+        content: content,
+        flag: flag
+      })
+    )
   }
 
-  message(msg: Message) {
-    console.log('sent message: ', msg);
-    this.socket.emit('message', msg)
-    this.emit('message', msg)
+  async sendMessage(msg: Message) {
+    return new Promise<Message>((resolve, reject) => { //TODO, add timeout
+      console.log('sent message: ', msg)
+      this.socket.emit('message', msg, (ret: Message) => {
+        resolve(ret as Message)
+      })
+    })
   }
 
   cryptoHelper: CryptoHelper = new CryptoHelper()
@@ -558,42 +637,40 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
       this.socket.connect()
       this.socket.on('connected', (o) => {
         this.user = o
-        console.log('connected: ', o);
-        this.notifyNewMessage = useChatStore().updateConversation //TODO: this is for test only, delete this
+        console.log('connected: ', o)
+        // this.notifyNewMessage = useChatStore().updateConversation //TODO: this is for test only, delete this
         useChatStore().me = o
-        console.log('me: ', useChatStore().me);
         resolve()
       })
 
       this.socket.on('connect_error', (error) => {
-        console.error('Connection error:', error.message);
+        console.error('Connection error:', error.message)
         reject(error)
-      });
+      })
 
       this.socket.on('disconnect', (reason) => {
-        console.log('disconnected', reason);
+        console.log('disconnected', reason)
       })
 
       this.socket.on('message', (msg: Message) => {
-        this.handleMessage(msg);
+        this.handleMessage(msg)
       })
     })
-
   }
-  notifyNewMessage: (message: Message) => void
+  // notifyNewMessage: (message: Message) => void
   private handleMessage(msg: Message) {
     if (!this.conversationMap.has(msg.senderId)) {
-      this.newConversation(msg.senderId);
+      this.newConversation(msg.senderId)
     }
-    this.conversationMap.get(msg.senderId).notify(msg);
-    this.notifyNewMessage(msg) //TODO: this is for test only, delete this
+    this.conversationMap.get(msg.senderId).notify(msg)
+    // this.notifyNewMessage(msg) //TODO: this is for test only, delete this
   }
 
   private newConversation(senderId: number) {
     console.log(`new conversation with ${senderId}`)
-    const newConversation = new Conversation(senderId, this);
-    InjectDefaultPipeline(newConversation);
-    this.conversationMap.set(senderId, newConversation);
+    const newConversation = new Conversation(senderId, this)
+    InjectDefaultPipeline(newConversation)
+    this.conversationMap.set(senderId, newConversation)
   }
 
   async establishE2EE(to: number) {
@@ -604,12 +681,10 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
     await conversation.unableE2EE()
   }
 
-
   public getConversation(id: number): Conversation {
     if (!this.conversationMap.has(id)) {
       this.newConversation(id)
     }
     return this.conversationMap.get(id)
   }
-
 }

@@ -5,11 +5,11 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ref, onMounted, watch, shallowRef, triggerRef } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { MessageWarp, StackedMessage, User } from './ChatMessage';
 import VirtualList from './VirtualList/index.tsx';
 import MessageStack, { type Source } from './MessageStack.vue';
-import useChatStore, { Conversation } from '@/store/modules/chatStore';
+import useChatStore, { ChatSession } from '@/store/modules/chatStore';
 
 const props = defineProps({
   channel: {
@@ -19,19 +19,35 @@ const props = defineProps({
 })
 
 const getKey = (item: Source) => item.stack.stack_id
-const { getConversation } = useChatStore()
-
-const messageGroups = ref<Source[]>([]);
+const { getChatSession: getConversation } = useChatStore()
+const messageGroups = ref<Source[]>([]); //TODO refactor this
 const virtualListRef = ref<any | null>(null)
-let conv: Conversation
+let conv: ChatSession
 let curWatch: Function | null = null
 onMounted(() => {
   conv = getConversation(props.channel)
 
+  // curWatch = watch(conv.chat, (newVal, oldVal) => {
+  //   if (newVal.length === oldVal.length) return
+  //   const newMsg = newVal.at(-1)
+  //   append(newMsg)
+  // }, { immediate: false, deep: true })
+
   curWatch = watch(conv.chat, (newVal, oldVal) => {
-    const newMsg = newVal.at(-1)
-    append(newMsg)
+    // const newMsg = newVal.at(-1)
+    // append(newMsg)
+    messageGroups.value = newVal.map((msg) => ({
+      stack: new StackedMessage([msg]),
+      sender: new User(
+        msg.sender.id,
+        msg.sender.name,
+        msg.sender.avatar
+      ),
+      conversation: conv as any // Im sure this is a bug that typescript wrongly infer the type of conversation
+    }))
+
   }, { immediate: false, deep: true })
+
   scrollToBottom()
 })
 
@@ -41,8 +57,18 @@ watch(() => props.channel, (newVal, oldVal) => {
   messageGroups.value = []
   conv = getConversation(newVal)
   curWatch = watch(conv.chat, (newVal, oldVal) => {
-    const newMsg = newVal.at(-1)
-    append(newMsg)
+    // const newMsg = newVal.at(-1)
+    // append(newMsg)
+    messageGroups.value = newVal.map((msg) => ({
+      stack: new StackedMessage([msg]),
+      sender: new User(
+        msg.sender.id,
+        msg.sender.name,
+        msg.sender.avatar
+      ),
+      conversation: conv as any // Im sure this is a bug that typescript wrongly infer the type of conversation
+    }))
+
   }, { immediate: false, deep: true })
   scrollToBottom()
 })

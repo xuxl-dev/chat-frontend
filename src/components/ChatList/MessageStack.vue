@@ -8,7 +8,7 @@
     <div class="flex flex-col">
       <!-- {{ stackedMessage.sender }} {{ sender }} -->
       <TransitionGroup name="list" tag="div">
-        <MessageItem v-for="(v, i) in source.stack.messages" :key="v.id" :sent-by="source.sender" :message="v" :class="{
+        <MessageItem v-for="(v, i) in source.stack.messages" :key="v.tid" :sent-by="source.sender" :message="v" :class="{
           'justify-end': source.sender.id === source.stack.sender.id,
           'message-transform': !isSelfMessage,
           'self-message-transform': isSelfMessage,
@@ -22,8 +22,8 @@
 import { ref, onMounted, computed } from 'vue'
 import { MessageWarp, StackedMessage, User } from './ChatMessage';
 import MessageItem from './MessageItem.vue';
-import useChatStore, { type Conversation } from '@/store/modules/chatStore';
-import {type Ref }from 'vue';
+import useChatStore, { type ChatSession } from '@/store/modules/chatStore';
+
 const { me } = useChatStore()
 const isSelfMessage = computed(() => props.source.stack.sender.id === me?.id)
 onMounted(() => {
@@ -31,7 +31,7 @@ onMounted(() => {
 
 export interface Source {
   stack: StackedMessage,
-  conversation: Conversation,
+  conversation: ChatSession,
   sender: User,
 }
 

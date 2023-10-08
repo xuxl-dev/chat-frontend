@@ -4,6 +4,10 @@ const instance = axios.create({
   baseURL: import.meta.env.VITE_APP_AXIOS_BASE_URL
 })
 
+export const defHttp = axios.create({
+  baseURL: import.meta.env.VITE_APP_AXIOS_BASE_URL
+})
+
 /**
  * 请求拦截
  */
