@@ -1,12 +1,12 @@
 <template>
   <div>
     <el-container class="app-wrapper">
-      <el-aside width="210px" class="sidebar-container">
+      <el-aside class="sidebar-container">
         <MenuIndex />
       </el-aside>
       <el-container class="container" :class="{ hidderContainer: '210px' }">
         <el-header><headerIndex /></el-header>
-        <el-main><HomeViewVue /></el-main>
+        <el-main><ChatView /></el-main>
       </el-container>
     </el-container>
   </div>
@@ -15,7 +15,7 @@
 <script setup lang="ts">
 import MenuIndex from './Menu/MenuIndex.vue'
 import headerIndex from './header/headIndex.vue'
-import HomeViewVue from '@/pages/HomeView.vue'
+import ChatView from '@/pages/ChatView.vue'
 </script>
 
 <style lang="scss" scoped>
@@ -36,5 +36,17 @@ import HomeViewVue from '@/pages/HomeView.vue'
 }
 .el-header {
   padding: 0;
+}
+
+.sidebar-container {
+  width: 210px;
+  height: 100%;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1001;
+  overflow: hidden;
+  background-color: #304156;
 }
 </style>

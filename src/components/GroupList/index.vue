@@ -1,82 +1,64 @@
-<template>
-    <el-menu
-      active-text-color="#ffd04b"
-      background-color="#304156"
-      class="el-menu-vertical-demo"
-      :default-active="defaultActive"
-      text-color="#fff"
-      @open="handleOpen"
-      @close="handleClose"
-      router
-      unique-opened
-      :collapse="!$store.getters.siderType"
+<template class="grouplist">
+  <el-tabs type="border-card" class="demo-tabs" tab-position="left">
+    <el-tab-pane
+      v-for="item in groupsList"
+      :key="index"
+      :label="item.name"
+      :name="item.id"
     >
-      <el-sub-menu :index="item.id" v-for="item in groupsList" :key="item.id">
-        <template #title>
-          <!-- 如果使用的是全局定义的elicon -->
-          <el-icon><component :is="iconList[item.icon]"></component></el-icon>
-          <span>{{ item.authName }}</span>
-        </template>
-        <el-menu-item
-          v-for="it in item.children"
-          :key="it.id"
-          ><el-icon><Menu /></el-icon>{{ it.authName }}</el-menu-item
-        >
-      </el-sub-menu>
-    </el-menu>
-  </template>
-  
-  <script setup>
-  import { ref } from 'vue'
-  //需要全局导入ele-icon
-  import {
-    User,
-    Menu,
-    Setting,
-    Shop,
-    PieChart,
-    Tickets
-  } from '@element-plus/icons-vue'
-  
-  //群头像列表（目前拿icon代替）
-  const iconList = ref(['User', 'Setting', 'Shop', 'Tickets', 'PieChart'])
-  
-  const groupsList = ref([])
-  const initgroupList = async () => {
-    groupsList.value = [
-        {
-            'id': '125',
-            'authName': '聊天群',
-            'icon': 0, //此处应为群头像
-            'children': [
-                    {
-                        'id': '1',
-                        'authName': '1号群',
-                        //群成员列表从这里获取吗？
-                        //'userlist': [],   
-                        'order' : None,
-                    },
-                    {
-                        'id': '2',
-                        'authName': '2号群',
-                        //'userlist': [],
-                        'order' : None,
-                    },
-                    {
-                        'id': '3',
-                        'authName': '3号群',
-                        //'userlist': [],
-                        'order' : None,
-                    },
-                    
-                    ],
-            'order' : 1,
-        },
-        ]
+      <div v-for="user in item.username">{{ user }}</div>
+    </el-tab-pane>
+  </el-tabs>
+</template>
+
+<script setup lang="ts">
+import { ref } from 'vue'
+import ChatList from '@/components/ChatList/index.vue'
+import { Calendar } from '@element-plus/icons-vue'
+
+interface group {
+  id: string
+  name: string
+  username: string[]
+  unReadNumber: number
+}
+
+let groupsList: group[] = [
+  {
+    id: '1',
+    name: '1号群',
+    username: ['zhangsan', 'lisi'],
+    unReadNumber: 1
+  },
+  {
+    id: '2',
+    name: '2号群',
+    username: ['lisi', 'wangwu'],
+    unReadNumber: 0
+  },
+  {
+    id: '3',
+    name: '3号群',
+    username: ['zhangsan', 'wangwu'],
+    unReadNumber: 0
   }
-  initgroupList()
-  
-  </script>
-  
-  <style lang="scss" src="./styles.scss" scoped />
-  
+]
+
+console.log(groupsList.name)
+</script>
+
+<style lang="scss">
+.grouplist {
+  width: 100%;
+  height: 100%;
+}
+.demo-tabs > .el-tabs__content {
+  padding-left: 5px;
+  color: #6b778c;
+  font-size: 25px;
+  font-weight: 600;
+}
+.el-tabs {
+  height: 100%;
+}
+</style>

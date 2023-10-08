@@ -12,7 +12,6 @@
       <template #title>
         <!-- 如果使用的是全局定义的elicon -->
         <el-icon><component :is="iconList[0]"></component></el-icon>
-        <!-- <el-icon><location /></el-icon> -->
         <span>工作组</span>
       </template>
       <el-menu-item v-for="it in groupsList" :key="it.id"

@@ -1,13 +1,15 @@
 <template>
   <div class="navbar">
     <groupname />
-    <div class="navbar-right"><Avatar></Avatar></div>
+
+    <div class="navbar-right"><Time /><Avatar></Avatar></div>
   </div>
 </template>
 
 <script setup lang="ts">
 import groupname from './components/groupname.vue'
 import Avatar from './components/avatar.vue'
+import Time from './components/Time.vue'
 </script>
 
 <style lang="scss" scoped>
