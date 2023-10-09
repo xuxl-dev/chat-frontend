@@ -8,7 +8,7 @@
     <div class="flex flex-col">
       <!-- {{ stackedMessage.sender }} {{ sender }} -->
       <TransitionGroup name="list" tag="div">
-        <MessageItem v-for="(v, i) in source.messages" :key="v.tid" :sent-by="source.sender" :message="v" :class="{
+        <MessageItem v-for="(v, i) in source.messages" :key="v.value.tid" :sent-by="source.sender" :message="v" :class="{
           'justify-end': source.sender.id === source.sender.id,
           'message-transform': !isSelfMessage,
           'self-message-transform': isSelfMessage,

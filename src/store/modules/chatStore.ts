@@ -1,7 +1,6 @@
 import {
   MessageWarp,
-  User,
-  activeWarps
+  User
 } from '@/components/ChatList/ChatMessage'
 import {
   BakaMessager,
@@ -9,7 +8,7 @@ import {
   Message
 } from '@/components/ChatList/helpers/messageHelper'
 import { defineStore } from 'pinia'
-import { reactive, ref, type Ref } from 'vue'
+import { reactive, ref, shallowReactive, type Ref, triggerRef } from 'vue'
 import {
   BeginProcessorLayer,
   EndProcessorLayer,
@@ -17,6 +16,7 @@ import {
   type ProcessorLayer,
 } from './ChatProcessors/base'
 import { ACKUpdateLayer } from './ChatProcessors/ACKUpdateLayer'
+import EventEmitter from 'eventemitter3'
 
 const observationOptions = {
   root: null,
@@ -63,18 +63,24 @@ export function getChatSession(id: number) {
   return sesses.get(id)!
 }
 
-export class ChatSession {
+export class ChatSession extends EventEmitter {
   bindingGroup: number
   private conversation: Conversation
 
   constructor(bindingGroup: number) {
+    super()
     this.bindingGroup = bindingGroup
     this.conversation = useChatStore().bkm.getConversation(bindingGroup)
     this.setNexts()
   }
 
   // chat = ref<MessageWarp[]>([])
-  chat = reactive<Map<string, Ref<MessageWarp>>>(new Map())
+  /**
+   * Do not use this directly, use `getChatSession(id).chat.get(id)` instead
+   * 
+   * this will not trigger update when new message comes
+   */
+  private chat = shallowReactive<Map<string, Ref<MessageWarp>>>(new Map())
 
   callback = (entries: any, observer: any) => {
     entries.forEach((entry: any) => {
@@ -121,25 +127,25 @@ export class ChatSession {
   }
 
   setMsg(messageWarp: MessageWarp) {
+    if (!messageWarp.id) {
+      console.log(messageWarp, `messageWarp.id is not set`)
+      return
+    }
     console.log('setMsg', messageWarp)
-    messageWarp
-    
-    this.chat.set(messageWarp.id, ref(messageWarp))
+    const msgRef = ref(messageWarp)
+    this.emit('new-or-update-message', msgRef)
+    this.chat.set(messageWarp.id, msgRef)
   }
 
-  refresh() {
-    console.log('refresh', this.chat)
-    // triggerRef(this.chat)
+  getMsgRef(id: string) {
+    return this.chat.get(id)
   }
 
   async send(msg: Message) {
     const sentMsgAck = await this.conversation.send(msg)
+    msg.msgId = (sentMsgAck as any).content.ackMsgId
     const warp = MessageWarp.fromMessage(msg)
-    const msgId = (sentMsgAck as any).content.ackMsgId
-    activeWarps.set(msgId, warp)
-    // this.chat.value.push(warp)
-    this.chat.set(msgId, ref(warp))
-    msg.msgId = msgId
+    this.setMsg(warp)
     return msg
   }
 }

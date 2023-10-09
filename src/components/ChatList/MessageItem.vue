@@ -1,36 +1,33 @@
 <template>
-  <div class="chat-message flex items-end h-full"
-       ref="msgRef"
-       :msgid="message.id"
-       :class="{
-         'flex-row-reverse': !isSelfMessage,
-       }">
-    <div class="message-body break-words ml-2 mr-2 whitespace-pre-wrap text-xl"
-         :class="{
-           'message-bubble': !isSelfMessage,
-           'my-message-bubble': isSelfMessage,
-           'no-tail': displayStyle !== 'tail',
-           'left-tailed': displayStyle === 'tail' && !isSelfMessage,
-           'right-tailed': displayStyle === 'tail' && isSelfMessage,
-         }">
-         <button @click="console.log(message)">LogMe</button> <br>
-         <button @click="$props.message.triggerUpdate">UpdateMe</button> <br>
-      {{ message.text }}
+  <div class="chat-message flex items-end h-full" ref="msgRef" :msgid="message.value.id" :class="{
+    'flex-row-reverse': !isSelfMessage,
+  }">
+    <div class="message-body break-words ml-2 mr-2 whitespace-pre-wrap text-xl" :class="{
+      'message-bubble': !isSelfMessage,
+      'my-message-bubble': isSelfMessage,
+      'no-tail': displayStyle !== 'tail',
+      'left-tailed': displayStyle === 'tail' && !isSelfMessage,
+      'right-tailed': displayStyle === 'tail' && isSelfMessage,
+    }">
+      <button @click="console.log(message)">LogMe</button> <br>
+
+      {{ message.value.text }}
       <div class="flex float-right">
-        <div class="receipt"
-             :class="{
-               collapse: !isSelfMessage,
-               sent: receipt === 'DELIVERED',
-               read: receipt === 'READ',
-             }
-               ">
-          <Checked v-if="receipt === 'DELIVERED'" />
-          <DoubleChecked v-else-if="receipt === 'READ'" />
+        <div class="receipt" :class="{
+          collapse: !isSelfMessage,
+          sent: receipt === 'DELIVERED',
+          read: receipt === 'READ',
+        }
+          ">
+          <el-icon>
+            <CircleCheck v-if="receipt === 'SENT'" />
+            <Checked v-else-if="receipt === 'DELIVERED'" />
+            <DoubleChecked v-else />
+          </el-icon>
         </div>
 
-        <div class="read-count flex items-end"
-             v-if="message.group">
-          <span class="text-sm">{{ message.readCount }}</span>
+        <div class="read-count flex items-end" v-if="message.value.group || showReadCount && isSelfMessage">
+          <span class="text-sm">{{ message.value.readCount }}</span>
         </div>
       </div>
     </div>
@@ -38,7 +35,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, type Ref } from 'vue';
 import { MessageWarp, User } from './ChatMessage';
 import Checked from './icons/Checked.vue';
 import DoubleChecked from './icons/DoubleChecked.vue';
@@ -47,19 +44,19 @@ import useChatStore from '@/store/modules/chatStore';
 const { me, getChatSession } = useChatStore()
 const msgRef = ref<HTMLElement | null>(null)
 onMounted(() => {
-  const conversation = getChatSession(props.message.senderId)
+  const conversation = getChatSession(props.message.value.senderId)
   if (!msgRef.value) return
   // console.log(props.message)
-  if (conversation.map.has(+props.message.id) || !props.message.id) {
+  if (conversation.map.has(+props.message.value.id) || !props.message.value.id) {
     return
   }
   conversation.observer.observe(msgRef.value)
-  conversation.map.set(+props.message.id, setObservableState)
+  conversation.map.set(+props.message.value.id, setObservableState)
 })
 
 const props = defineProps({
   message: {
-    type: Object as () => MessageWarp | Readonly<MessageWarp>,
+    type: Object as () => Ref<MessageWarp>,
     required: true,
   },
   sentBy: {
@@ -86,9 +83,9 @@ const props = defineProps({
 const emits = defineEmits(['click', 'sean']);
 
 const msg = ref(props.message);
-const isSelfMessage = computed(() => props.message.sender.id === me?.id);
+const isSelfMessage = computed(() => props.message.value.sender.id === me?.id);
 const receipt = computed(() => {
-  return props.message.status;
+  return props.message.value.status;
 });
 
 
@@ -138,21 +135,9 @@ defineExpose({
   }
 }
 
-$receipt-color: #72eda7;
-$read-color: #72eda7;
-$font-size: 24px;
-
 .receipt {
-
-  &.sent,
-  &.read {
-    color: $receipt-color;
-    font-size: $font-size;
-  }
-
-  &.read {
-    color: $read-color;
-  }
+  color: #72eda7;
+  font-size: 24px;
 }
 
 
