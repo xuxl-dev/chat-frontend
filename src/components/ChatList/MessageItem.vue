@@ -43,18 +43,18 @@ import { MessageWarp, User } from './ChatMessage';
 import Checked from './icons/Checked.vue';
 import DoubleChecked from './icons/DoubleChecked.vue';
 import useChatStore from '@/store/modules/chatStore';
-import { ChatSession } from '../../store/modules/chatStore';
-const { me } = useChatStore()
+
+const { me, getChatSession } = useChatStore()
 const msgRef = ref<HTMLElement | null>(null)
 onMounted(() => {
+  const conversation = getChatSession(props.message.senderId)
   if (!msgRef.value) return
   // console.log(props.message)
-  if (props.conversation.map.has(+props.message.id) || !props.message.id) {
+  if (conversation.map.has(+props.message.id) || !props.message.id) {
     return
   }
-  props.conversation.observer.observe(msgRef.value)
-  props.conversation.map.set(+props.message.id, setObservableState)
-  console.log(props.conversation.map)
+  conversation.observer.observe(msgRef.value)
+  conversation.map.set(+props.message.id, setObservableState)
 })
 
 const props = defineProps({
@@ -80,10 +80,6 @@ const props = defineProps({
     type: Boolean,
     required: false,
     default: true,
-  },
-  conversation: {
-    type: ChatSession,
-    required: true,
   }
 });
 

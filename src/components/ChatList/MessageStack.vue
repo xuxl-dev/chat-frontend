@@ -8,12 +8,12 @@
     <div class="flex flex-col">
       <!-- {{ stackedMessage.sender }} {{ sender }} -->
       <TransitionGroup name="list" tag="div">
-        <MessageItem v-for="(v, i) in source.stack.messages" :key="v.tid" :sent-by="source.sender" :message="v" :class="{
-          'justify-end': source.sender.id === source.stack.sender.id,
+        <MessageItem v-for="(v, i) in source.messages" :key="v.tid" :sent-by="source.sender" :message="v" :class="{
+          'justify-end': source.sender.id === source.sender.id,
           'message-transform': !isSelfMessage,
           'self-message-transform': isSelfMessage,
-        }" :display-style="i === source.stack.messages.length - 1 ? 'tail' : 'normal'"
-          :conversation="source.conversation" />
+        }" :display-style="i === source.messages.length - 1 ? 'tail' : 'normal'"
+          />
       </TransitionGroup>
     </div>
   </div>
@@ -25,19 +25,19 @@ import MessageItem from './MessageItem.vue';
 import useChatStore, { type ChatSession } from '@/store/modules/chatStore';
 
 const { me } = useChatStore()
-const isSelfMessage = computed(() => props.source.stack.sender.id === me?.id)
+const isSelfMessage = computed(() => props.source.sender.id === me?.id)
 onMounted(() => {
 })
 
-export interface Source {
-  stack: StackedMessage,
-  conversation: ChatSession,
-  sender: User,
-}
+// export interface Source {
+//   stack: StackedMessage,
+//   conversation: ChatSession,
+//   sender: User,
+// }
 
 const props = defineProps({
   source: {
-    type: Object as () => Source,
+    type: Object as () => StackedMessage,
     required: true,
   }
 });

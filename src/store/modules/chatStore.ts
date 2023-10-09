@@ -9,12 +9,12 @@ import {
   Message
 } from '@/components/ChatList/helpers/messageHelper'
 import { defineStore } from 'pinia'
-import { ref, triggerRef, type Ref } from 'vue'
+import { reactive, ref, type Ref } from 'vue'
 import {
   BeginProcessorLayer,
   EndProcessorLayer,
   ProcessEndException,
-  type ProcessorLayer
+  type ProcessorLayer,
 } from './ChatProcessors/base'
 import { ACKUpdateLayer } from './ChatProcessors/ACKUpdateLayer'
 
@@ -73,7 +73,8 @@ export class ChatSession {
     this.setNexts()
   }
 
-  chat = ref<Map<string, MessageWarp>>(new Map())
+  // chat = ref<MessageWarp[]>([])
+  chat = reactive<Map<string, Ref<MessageWarp>>>(new Map())
 
   callback = (entries: any, observer: any) => {
     entries.forEach((entry: any) => {
@@ -89,6 +90,7 @@ export class ChatSession {
 
   observer = new IntersectionObserver(this.callback, observationOptions)
   map = new Map()
+
   processors: ProcessorLayer[] = [
     BeginProcessorLayer.instance,
     ACKUpdateLayer.instance,
@@ -113,13 +115,21 @@ export class ChatSession {
     }
     console.log('notify and pushed', msg)
     // this is a processed message, and shall display
-    this.chat.value.set(msg.msgId, MessageWarp.fromMessage(msg))
+    // this.chat.value.push(MessageWarp.fromMessage(msg))
+    this.setMsg(MessageWarp.fromMessage(msg))
     return this
   }
 
+  setMsg(messageWarp: MessageWarp) {
+    console.log('setMsg', messageWarp)
+    messageWarp
+    
+    this.chat.set(messageWarp.id, ref(messageWarp))
+  }
+
   refresh() {
-    console.log('refresh', this.chat.value)
-    triggerRef(this.chat)
+    console.log('refresh', this.chat)
+    // triggerRef(this.chat)
   }
 
   async send(msg: Message) {
@@ -127,13 +137,10 @@ export class ChatSession {
     const warp = MessageWarp.fromMessage(msg)
     const msgId = (sentMsgAck as any).content.ackMsgId
     activeWarps.set(msgId, warp)
-    this.chat.value.set(msgId, warp)
+    // this.chat.value.push(warp)
+    this.chat.set(msgId, ref(warp))
     msg.msgId = msgId
     return msg
-  }
-
-  getMsgRef(id: string) {
-    return this.chat.value.get(id)
   }
 }
 

@@ -1,15 +1,16 @@
 <template>
   <div>
-    <VirtualList :data="messageGroups" :data-key="getKey" :item="MessageStack" :size="20" class="scroll-smooth"
+    <VirtualList :data="source" :data-key="getKey" :item="MessageStack" :size="20" class="scroll-smooth"
       ref="virtualListRef" />
   </div>
 </template>
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, computed } from 'vue';
 import { MessageWarp, StackedMessage, User } from './ChatMessage';
 import VirtualList from './VirtualList/index.tsx';
-import MessageStack, { type Source } from './MessageStack.vue';
-import useChatStore, { ChatSession } from '@/store/modules/chatStore';
+import MessageStack from './MessageStack.vue';
+import { getChatSession } from '../../store/modules/chatStore';
+
 
 const props = defineProps({
   channel: {
@@ -18,89 +19,27 @@ const props = defineProps({
   }
 })
 
-const getKey = (item: Source) => item.stack.stack_id
-const { getChatSession: getConversation } = useChatStore()
-const messageGroups = ref<Source[]>([]); //TODO refactor this
-const virtualListRef = ref<any | null>(null)
-let conv: ChatSession
-let curWatch: Function | null = null
-onMounted(() => {
-  conv = getConversation(props.channel)
+const getKey = (item: StackedMessage) => item.stack_id
 
-  // curWatch = watch(conv.chat, (newVal, oldVal) => {
-  //   if (newVal.length === oldVal.length) return
-  //   const newMsg = newVal.at(-1)
-  //   append(newMsg)
-  // }, { immediate: false, deep: true })
-
-  curWatch = watch(conv.chat, (newVal, oldVal) => {
-    // const newMsg = newVal.at(-1)
-    // append(newMsg)
-    messageGroups.value = newVal.map((msg) => ({
-      stack: new StackedMessage([msg]),
-      sender: new User(
-        msg.sender.id,
-        msg.sender.name,
-        msg.sender.avatar
-      ),
-      conversation: conv as any // Im sure this is a bug that typescript wrongly infer the type of conversation
-    }))
-
-  }, { immediate: false, deep: true })
-
-  scrollToBottom()
+let source = computed(() => {
+  return Array.from(getChatSession(props.channel).chat.values()).map(msg => new StackedMessage([msg.value]))
 })
+
+const virtualListRef = ref<any | null>(null)
+
+watch(() => getChatSession(props.channel).chat, (newVal, oldVal) => {
+  console.log('@@newVal', newVal)
+  // source.value = newVal.value.map(msg=>new StackedMessage([msg]))
+  //TODO: use a better way to update the source
+}, { immediate: true, deep: true })
 
 // on prop channel change
 watch(() => props.channel, (newVal, oldVal) => {
-  curWatch?.()
-  messageGroups.value = []
-  conv = getConversation(newVal)
-  curWatch = watch(conv.chat, (newVal, oldVal) => {
-    // const newMsg = newVal.at(-1)
-    // append(newMsg)
-    messageGroups.value = newVal.map((msg) => ({
-      stack: new StackedMessage([msg]),
-      sender: new User(
-        msg.sender.id,
-        msg.sender.name,
-        msg.sender.avatar
-      ),
-      conversation: conv as any // Im sure this is a bug that typescript wrongly infer the type of conversation
-    }))
 
-  }, { immediate: false, deep: true })
-  scrollToBottom()
 })
 
-const append = (message: MessageWarp | Readonly<MessageWarp>) => {
-  if (!lastStack()) {
-    messageGroups.value.push({
-      stack: new StackedMessage([message]),
-      sender: new User(
-        message.sender.id,
-        message.sender.name,
-        message.sender.avatar
-      ),
-      conversation: conv as any // Im sure this is a bug that typescript wrongly infer the type of conversation
-    })
-  } else {
-    const last = lastStack()!
-    if (last.stack.sender.id === message.sender.id) {
-      last.stack.messages.push(message)
-    } else {
-      messageGroups.value.push({
-        stack: new StackedMessage([message]),
-        sender: message.sender,
-        conversation: conv as any // Im sure this is a bug that typescript wrongly infer the type of conversation
-      })
-    }
-  }
-
-}
-
 const lastStack = () => {
-  return messageGroups.value.at(-1)
+  return source.value.at(-1)
 }
 
 const scrollToBottom = () => {
@@ -108,9 +47,7 @@ const scrollToBottom = () => {
 }
 
 defineExpose({
-  append,
   lastStack,
-  messageGroups,
   getKey,
   virtualListRef,
   scrollToBottom

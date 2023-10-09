@@ -1,6 +1,5 @@
-import { triggerRef } from 'vue'
 import { getMessageStr, type Message } from './helpers/messageHelper'
-import useChatStore, { ChatSession, getChatSession } from '@/store/modules/chatStore'
+import useChatStore, { getChatSession } from '@/store/modules/chatStore'
 
 export const activeWarps: Map<string, MessageWarp> = new Map()
 
@@ -10,9 +9,9 @@ export class MessageWarp {
   group: boolean
   showAvatar: boolean
 
-  private _msg: Message
+  _msg: Message
 
-  private constructor() {}
+  private constructor() { }
 
   static fromMessage(message: Message): MessageWarp {
     const warp = new MessageWarp()
@@ -71,7 +70,7 @@ export class MessageWarp {
     return this._msg.msgId
   }
 
-  
+
   ack(type: 'read' | 'delivered' = 'read') {
     console.log('@@ack', this._msg.msgId)
     if (type === 'read') {
@@ -82,7 +81,10 @@ export class MessageWarp {
     } else {
       this._msg.hasReadCount = 0
     }
-    getChatSession(this._msg.receiverId).chat.value.set(this._msg.msgId, this)
+    // getChatSession(this._msg.receiverId).chat.value.push(this)
+    // getChatSession(this._msg.receiverId).chat.value.set(this._msg.msgId, this)
+    getChatSession(this._msg.receiverId).setMsg(this)
+    // this.triggerUpdate()
   }
 
   /**@deprecated */

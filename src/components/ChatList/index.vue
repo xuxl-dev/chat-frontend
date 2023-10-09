@@ -1,14 +1,10 @@
-<template>  
-  cur channel::{{ curChannel  }}
-  <MsgList class="scroller"
-           ref="msglistRef"
-           :channel="curChannel" />
-
+<template>
+  cur channel::{{ curChannel }}
+  <MsgList class="scroller" ref="msglistRef" :channel="curChannel" />
 </template>
 
 <script lang="ts" setup>
 import { ref, onMounted, computed } from 'vue';
-import { randChat } from './randChatG';
 import MsgList from './MsgList.vue';
 import useChatStore from '@/store/modules/chatStore';
 const msglistRef = ref<any | null>(null)
@@ -90,6 +86,4 @@ function runChunked(task: Function, data: any[], chunkSize: number) {
 }
 </style>
 
-<style>
-
-</style>
+<style></style>
