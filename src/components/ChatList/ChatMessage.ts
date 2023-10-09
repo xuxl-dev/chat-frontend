@@ -1,40 +1,29 @@
-import { triggerRef } from 'vue'
-import { getMessageStr, type Message } from './helpers/messageHelper'
-import useChatStore from '@/store/modules/chatStore'
-
-export const activeWarps: Map<string, MessageWarp> = new Map()
+import type { Ref } from 'vue'
+import { ACKMsgType, getMessageStr, type Message } from './helpers/messageHelper'
+import useChatStore, { getChatSession } from '@/store/modules/chatStore'
 
 export class MessageWarp {
   static _id = 0
   tid: number = MessageWarp._id++
   group: boolean
-  showAvatar: boolean;
-  
-  private _msg : Message
+  showAvatar: boolean
 
-  private constructor() {}
+  _msg: Message
+
+  private constructor() { }
 
   static fromMessage(message: Message): MessageWarp {
     const warp = new MessageWarp()
     warp._msg = message
     if (message.msgId) {
       console.log('set', message.msgId, warp)
-      activeWarps.set(message.msgId, warp)
-    } 
+    }
     // these messages sent by me has no msgId,
     // they are processed when sent is done, server will send back a msgId
-    
+
     return warp
   }
 
-  static get(msgId: string) {
-    const activeWarp = activeWarps.get(msgId)
-    if (activeWarp) {
-      return activeWarp
-    }
-    // if not, try retrieve from local indexedDB, then server
-    throw new Error('Message not found')
-  }
 
   get senderId(): number {
     return this._msg.senderId
@@ -42,7 +31,7 @@ export class MessageWarp {
 
   get text(): string {
     if (typeof this._msg.content === 'object') {
-      return `[DEBUG] \n ${getMessageStr(this._msg)}` 
+      return `[DEBUG] \n ${getMessageStr(this._msg)}`
     }
     return this._msg.content
   }
@@ -51,11 +40,14 @@ export class MessageWarp {
     return this._msg.hasReadCount
   }
 
-  get status(): 'DELIVERED' | 'READ' {
-    if (!this._msg.hasReadCount) {
+  get status(): 'SENT' | 'DELIVERED' | 'READ' {
+    if (this._msg.hasReadCount > 0) {
+      return 'READ'
+    } else if (this._msg.hasReadCount === 0) {
       return 'DELIVERED'
+    } else {
+      return 'SENT'
     }
-    return this._msg.hasReadCount > 0 ? 'READ' : 'DELIVERED'
   }
 
   get senderAvatar(): string {
@@ -67,70 +59,45 @@ export class MessageWarp {
     return User.fromId(+this.senderId)
   }
 
-  get id() : string {
+  get id(): string {
     return this._msg.msgId
   }
 
-  ack(type: 'read' | 'delivered' = 'read') {
-    console.log('@@ack', this._msg.msgId)
 
-    if (type === 'read') {
+  ack(type: ACKMsgType) {
+    if (type === ACKMsgType.READ) {
       if (this._msg.hasReadCount > 0) {
         this._msg.hasReadCount += 1
       }
       this._msg.hasReadCount = 1
-    } else {
+    } else { // DELIVERED
       this._msg.hasReadCount = 0
     }
-    this.triggerUpdate()
-  }
-
-  triggerUpdate() {
-    //TODO: this has effencicy problem
-    useChatStore().getChatSession(this._msg.receiverId).refresh()
   }
 }
 
 export class StackedMessage {
   static _stack_id = 0
   stack_id: number = StackedMessage._stack_id++
-  messages: (MessageWarp | Readonly<MessageWarp>)[] = []
+  messages: Ref<MessageWarp>[] = []
 
-  constructor(arr: (MessageWarp | Readonly<MessageWarp>)[] = []) {
+  constructor(arr: (Ref<MessageWarp>)[] = []) {
     this.messages = arr
   }
 
-  append(message: MessageWarp) {
+  append(message: Ref<MessageWarp>) {
     this.messages.push(message)
   }
 
   public get sender(): User {
-    return User.fromId(+this.messages[0].senderId)
+    return User.fromId(+this.messages[0].value.senderId)
   }
-}
-
-export function mergeAdjacentMessages(
-  messages: MessageWarp[]
-): StackedMessage[] {
-  const ret: StackedMessage[] = []
-  let lastSenderId = -1
-
-  messages.forEach((message) => {
-    if (message.senderId === lastSenderId) {
-      ret[ret.length - 1].append(message)
-    } else {
-      ret.push(new StackedMessage([message]))
-    }
-    lastSenderId = message.senderId
-  })
-
-  return ret
 }
 
 export class User {
   id: number
   name: string
-  avatar: string
+  avatar: string;
   [key: string]: any
   constructor(id: number, name: string, avatar: string) {
     this.id = id
