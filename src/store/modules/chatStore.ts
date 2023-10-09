@@ -1,10 +1,22 @@
-import { MessageWarp, User, activeWarps } from '@/components/ChatList/ChatMessage'
-import { BakaMessager, Conversation, Message } from '@/components/ChatList/helpers/messageHelper'
+import {
+  MessageWarp,
+  User,
+  activeWarps
+} from '@/components/ChatList/ChatMessage'
+import {
+  BakaMessager,
+  Conversation,
+  Message
+} from '@/components/ChatList/helpers/messageHelper'
 import { defineStore } from 'pinia'
-import { ref, triggerRef } from 'vue'
-import { BeginProcessorLayer, EndProcessorLayer, ProcessEndException, type ProcessorLayer } from './ChatProcessors/base'
+import { ref, triggerRef, type Ref } from 'vue'
+import {
+  BeginProcessorLayer,
+  EndProcessorLayer,
+  ProcessEndException,
+  type ProcessorLayer
+} from './ChatProcessors/base'
 import { ACKUpdateLayer } from './ChatProcessors/ACKUpdateLayer'
-import instance from '../../apis/ajax';
 
 const observationOptions = {
   root: null,
@@ -14,32 +26,15 @@ const observationOptions = {
 
 const useChatStore = defineStore('chatStore', () => {
   const server = ref('http://localhost:3001')
-  const token = ref('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwidXNlcm5hbWUiOiJ1c2VyIiwicm9sZSI6InVzZXIiLCJpYXQiOjE2OTY2NjQzOTIsImV4cCI6MTY5OTI1NjM5Mn0.Vz5xa46oyYX5pbIphpNeuOyXvWTfBlLNH_fvv5IF6Mc')
+  const token = ref(
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwidXNlcm5hbWUiOiJ1c2VyIiwicm9sZSI6InVzZXIiLCJpYXQiOjE2OTY2NjQzOTIsImV4cCI6MTY5OTI1NjM5Mn0.Vz5xa46oyYX5pbIphpNeuOyXvWTfBlLNH_fvv5IF6Mc'
+  )
   const bkm = new BakaMessager({
     server: server.value,
     port: 3001,
     token: token.value
   })
   const me = ref<User | null>(null)
-  const conversations: Map<number, ChatSession> = new Map()
-
-  const updateConversation = async (raw: Message) => {
-    if (conversations.has(raw.senderId)) {
-      conversations.get(raw.senderId).notify(raw)
-    } else {
-      const conversation = await new ChatSession(raw.senderId).notify(
-        raw
-      )
-      conversations.set(raw.senderId, conversation)
-    }
-  }
-
-  const getChatSession = (id: number) => {
-    if (!conversations.has(id)) {
-      conversations.set(id, new ChatSession(id))
-    }
-    return conversations.get(id)!
-  }
 
   return {
     getChatSession,
@@ -50,6 +45,23 @@ const useChatStore = defineStore('chatStore', () => {
   }
 })
 
+const sesses: Map<number, ChatSession> = new Map()
+
+export async function updateConversation(raw: Message) {
+  if (sesses.has(raw.senderId)) {
+    sesses.get(raw.senderId).notify(raw)
+  } else {
+    const conversation = await new ChatSession(raw.senderId).notify(raw)
+    sesses.set(raw.senderId, conversation)
+  }
+}
+
+export function getChatSession(id: number) {
+  if (!sesses.has(id)) {
+    sesses.set(id, new ChatSession(id))
+  }
+  return sesses.get(id)!
+}
 
 export class ChatSession {
   bindingGroup: number
@@ -61,7 +73,7 @@ export class ChatSession {
     this.setNexts()
   }
 
-  chat = ref<MessageWarp[]>([])
+  chat = ref<Map<string, MessageWarp>>(new Map())
 
   callback = (entries: any, observer: any) => {
     entries.forEach((entry: any) => {
@@ -85,7 +97,7 @@ export class ChatSession {
 
   private setNexts() {
     for (let i = 0; i < this.processors.length - 1; i++) {
-      this.processors[i].next = this.processors[i + 1].process;
+      this.processors[i].next = this.processors[i + 1].process
     }
   }
 
@@ -101,7 +113,7 @@ export class ChatSession {
     }
     console.log('notify and pushed', msg)
     // this is a processed message, and shall display
-    this.chat.value.push(MessageWarp.fromMessage(msg))
+    this.chat.value.set(msg.msgId, MessageWarp.fromMessage(msg))
     return this
   }
 
@@ -113,12 +125,16 @@ export class ChatSession {
   async send(msg: Message) {
     const sentMsgAck = await this.conversation.send(msg)
     const warp = MessageWarp.fromMessage(msg)
-    activeWarps.set((sentMsgAck as any).content.ackMsgId, warp)
-    this.chat.value.push(warp)
-    msg.msgId = (sentMsgAck as any).content.ackMsgId
+    const msgId = (sentMsgAck as any).content.ackMsgId
+    activeWarps.set(msgId, warp)
+    this.chat.value.set(msgId, warp)
+    msg.msgId = msgId
     return msg
   }
-}
 
+  getMsgRef(id: string) {
+    return this.chat.value.get(id)
+  }
+}
 
 export default useChatStore

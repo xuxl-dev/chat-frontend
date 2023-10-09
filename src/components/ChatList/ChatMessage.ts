@@ -1,6 +1,6 @@
 import { triggerRef } from 'vue'
 import { getMessageStr, type Message } from './helpers/messageHelper'
-import useChatStore from '@/store/modules/chatStore'
+import useChatStore, { ChatSession, getChatSession } from '@/store/modules/chatStore'
 
 export const activeWarps: Map<string, MessageWarp> = new Map()
 
@@ -8,9 +8,9 @@ export class MessageWarp {
   static _id = 0
   tid: number = MessageWarp._id++
   group: boolean
-  showAvatar: boolean;
-  
-  private _msg : Message
+  showAvatar: boolean
+
+  private _msg: Message
 
   private constructor() {}
 
@@ -20,10 +20,10 @@ export class MessageWarp {
     if (message.msgId) {
       console.log('set', message.msgId, warp)
       activeWarps.set(message.msgId, warp)
-    } 
+    }
     // these messages sent by me has no msgId,
     // they are processed when sent is done, server will send back a msgId
-    
+
     return warp
   }
 
@@ -42,7 +42,7 @@ export class MessageWarp {
 
   get text(): string {
     if (typeof this._msg.content === 'object') {
-      return `[DEBUG] \n ${getMessageStr(this._msg)}` 
+      return `[DEBUG] \n ${getMessageStr(this._msg)}`
     }
     return this._msg.content
   }
@@ -67,24 +67,25 @@ export class MessageWarp {
     return User.fromId(+this.senderId)
   }
 
-  get id() : string {
+  get id(): string {
     return this._msg.msgId
   }
 
+  
   ack(type: 'read' | 'delivered' = 'read') {
     console.log('@@ack', this._msg.msgId)
-
     if (type === 'read') {
-      if (this._msg.hasReadCount > 0) {
+      if (this._msg.hasReadCount > 0) { //TODO: implement this
         this._msg.hasReadCount += 1
       }
       this._msg.hasReadCount = 1
     } else {
       this._msg.hasReadCount = 0
     }
-    this.triggerUpdate()
+    getChatSession(this._msg.receiverId).chat.value.set(this._msg.msgId, this)
   }
 
+  /**@deprecated */
   triggerUpdate() {
     //TODO: this has effencicy problem
     useChatStore().getChatSession(this._msg.receiverId).refresh()
@@ -130,7 +131,7 @@ export function mergeAdjacentMessages(
 export class User {
   id: number
   name: string
-  avatar: string
+  avatar: string;
   [key: string]: any
   constructor(id: number, name: string, avatar: string) {
     this.id = id
