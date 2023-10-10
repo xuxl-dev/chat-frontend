@@ -35,7 +35,17 @@ export enum ACKMsgType {
 
 export type MsgId = string
 
-export class Message {
+export interface IMessage {
+  msgId?: MsgId
+  senderId: number
+  receiverId: number
+  content: string | { [key: string]: any }
+  sentAt: Date
+  hasReadCount?: number
+  flag: number
+}
+
+export class Message implements IMessage {
   msgId?: MsgId
 
   senderId: number
