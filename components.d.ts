@@ -31,6 +31,7 @@ declare module '@vue/runtime-core' {
     ElSubMenu: typeof import('element-plus/es')['ElSubMenu']
     ElTabPane: typeof import('element-plus/es')['ElTabPane']
     ElTabs: typeof import('element-plus/es')['ElTabs']
+    Group: typeof import('./src/components/GroupList/component/group.vue')['default']
     GroupList: typeof import('./src/components/GroupList/index.vue')['default']
     Hamburger: typeof import('./src/components/header/components/hamburger.vue')['default']
     HeadIndex: typeof import('./src/components/header/headIndex.vue')['default']
