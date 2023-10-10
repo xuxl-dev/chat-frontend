@@ -148,6 +148,14 @@ export class ChatSession extends EventEmitter {
     this.setMsg(warp)
     return msg
   }
+
+  /** 
+   * @deprecated
+   * Do not use this in production
+   *  */
+  getRawChat() {
+    return this.chat
+  }
 }
 
 export default useChatStore
