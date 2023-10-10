@@ -41,7 +41,7 @@ const switchUser = async () => {
       <p>Current user:{{ useChatStore().me?.id }}</p>
       <button @click="send">send</button> <br>
       <button @click="switchUser">switch user</button> <br>
-      <button @click="console.log(useChatStore().getChatSession(useChatStore().me.id === 1 ? 2 : 1).chat)">log chat</button> <br>
+      <button @click="console.log(useChatStore().getChatSession(useChatStore().me.id === 1 ? 2 : 1).getRawChat())">log chat</button> <br>
     </div>
   </main>
 </template>
