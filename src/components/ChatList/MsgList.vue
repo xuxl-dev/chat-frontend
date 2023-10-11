@@ -32,7 +32,7 @@ onMounted(() => {
 })
 // on prop channel change
 watch(() => props.channel, (newVal, oldVal) => {
-  getChatSession(newVal).on('new-or-update-message', (warp: Ref<MessageWarp>) => {
+  getChatSession(newVal).on('new-message', (warp: Ref<MessageWarp>) => {
     const lst = lastStack()
     if (lst && lst.sender.id === warp.value.sender.id) {
       lst.append(warp)
@@ -40,6 +40,8 @@ watch(() => props.channel, (newVal, oldVal) => {
     }
     source.value.push(new StackedMessage([warp]))
   })
+
+  oldVal && getChatSession(oldVal).off('new-message')
 }, { immediate: true })
 
 const lastStack = () => {

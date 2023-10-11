@@ -378,6 +378,7 @@ export class Conversation extends EventEmitter {
    */
   public async send(message: Message) {
     message.receiverId = this.group
+    console.log(' this.group: ',  this.group)
     for (const handler of this.send_pipeline) {
       if (handler.pattern(message)) {
         await handler.handler(message)
@@ -611,7 +612,6 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
   }
 
   quickMessage(content: object, flag: MessageFlag, to: number) {
-    console.log('quick message: ', content)
     this.socket.emit(
       'message',
       Message.new({
@@ -624,7 +624,6 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
 
   async sendMessage(msg: Message) {
     return new Promise<Message>((resolve, reject) => { //TODO, add timeout
-      console.log('sent message: ', msg)
       // if (msg.receiverId === this.user?.id) {
       //   throw new Error('cannot send message to self')
       // }
@@ -666,7 +665,7 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
     if (!this.conversationMap.has(msg.senderId)) {
       this.newConversation(msg.senderId)
     }
-    console.log('stack trace: ', new Error().stack)
+    // console.log('stack trace: ', new Error().stack)
     this.conversationMap.get(msg.senderId).notify(msg)
     // this.notifyNewMessage(msg) //TODO: this is for test only, delete this
   }
