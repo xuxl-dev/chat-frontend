@@ -1,5 +1,5 @@
 import type { Ref } from 'vue'
-import { ACKMsgType, getMessageStr, type Message } from './helpers/messageHelper'
+import { ACKMsgType, getMessageStr, MessageFlag, type Message } from './helpers/messageHelper'
 import useChatStore, { getChatSession } from '@/store/modules/chatStore'
 
 export class MessageWarp {
@@ -64,7 +64,11 @@ export class MessageWarp {
   }
 
 
-  ack(type: ACKMsgType) {
+  /**
+   * when receive a ack message, update this message
+   * @param type 
+   */
+  updateAck(type: ACKMsgType) {
     if (type === ACKMsgType.READ) {
       if (this._msg.hasReadCount > 0) {
         this._msg.hasReadCount += 1
@@ -74,7 +78,24 @@ export class MessageWarp {
       this._msg.hasReadCount = 0
     }
   }
+
+  /**
+   * send ack to this message
+   * @param type 
+   */
+  ack(type: ACKMsgType) {
+    getChatSession(this.senderId).sendRawQuick(
+      {
+        ackMsgId: this.id,
+        type: ACKMsgType.READ
+      },
+      MessageFlag.ACK
+    )
+  }
+
 }
+
+
 
 export class StackedMessage {
   static _stack_id = 0

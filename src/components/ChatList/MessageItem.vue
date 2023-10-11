@@ -17,13 +17,10 @@
           collapse: !isSelfMessage,
           sent: receipt === 'DELIVERED',
           read: receipt === 'READ',
-        }
-          ">
-          <el-icon>
-            <CircleCheck v-if="receipt === 'SENT'" />
-            <Checked v-else-if="receipt === 'DELIVERED'" />
-            <DoubleChecked v-else />
-          </el-icon>
+        }">
+          <CircleChecked v-if="receipt === 'SENT'" />
+          <Checked v-else-if="receipt === 'DELIVERED'" />
+          <DoubleChecked v-else />
         </div>
 
         <div class="read-count flex items-end" v-if="message.value.group || showReadCount && isSelfMessage">
@@ -39,19 +36,14 @@ import { ref, computed, onMounted, type Ref } from 'vue';
 import { MessageWarp, User } from './ChatMessage';
 import Checked from './icons/Checked.vue';
 import DoubleChecked from './icons/DoubleChecked.vue';
+import CircleChecked from './icons/CircleChecked.vue';
 import useChatStore from '@/store/modules/chatStore';
 
 const { me, getChatSession } = useChatStore()
 const msgRef = ref<HTMLElement | null>(null)
+
 onMounted(() => {
-  const conversation = getChatSession(props.message.value.senderId)
-  if (!msgRef.value) return
-  // console.log(props.message)
-  if (conversation.map.has(+props.message.value.id) || !props.message.value.id) {
-    return
-  }
-  conversation.observer.observe(msgRef.value)
-  conversation.map.set(+props.message.value.id, setObservableState)
+
 })
 
 const props = defineProps({
@@ -80,8 +72,6 @@ const props = defineProps({
   }
 });
 
-const emits = defineEmits(['click', 'sean']);
-
 const msg = ref(props.message);
 const isSelfMessage = computed(() => props.message.value.sender.id === me?.id);
 const receipt = computed(() => {
@@ -89,18 +79,13 @@ const receipt = computed(() => {
 });
 
 
-const canBeSeen = ref(false);
-const setObservableState = (state: boolean) => {
-  canBeSeen.value = state;
-};
+
 
 defineExpose({
   msgRef,
   msg,
   isSelfMessage,
   receipt,
-  canBeSeen,
-  setObservableState,
 });
 
 </script>

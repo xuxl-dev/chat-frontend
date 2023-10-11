@@ -1,39 +1,52 @@
 <template>
-  <div class="message-container items-end mt-4 mb-4" :class="{
-    'flex-row-reverse': isSelfMessage,
-  }">
+  <div class="message-container items-end mt-4 mb-4"
+       :class="{
+         'flex-row-reverse': isSelfMessage,
+       }">
 
-    <ElAvatar :src="source.sender.avatar" :alt="source.sender.name" class="sticky bottom-0 avatar z-50" />
+    <ElAvatar :src="source.sender.avatar"
+              :alt="source.sender.name"
+              class="sticky bottom-0 avatar z-50" />
 
     <div class="flex flex-col">
+      {{ source.messages.length }}
       <!-- {{ stackedMessage.sender }} {{ sender }} -->
-      <TransitionGroup name="list" tag="div">
-        <MessageItem v-for="(v, i) in source.messages" :key="v.value.tid" :sent-by="source.sender" :message="v" :class="{
-          'justify-end': source.sender.id === source.sender.id,
-          'message-transform': !isSelfMessage,
-          'self-message-transform': isSelfMessage,
-        }" :display-style="i === source.messages.length - 1 ? 'tail' : 'normal'"
-          />
+      <TransitionGroup name="list"
+                       tag="div">
+        <MessageItem v-for="(v, i) in source.messages"
+                     :key="v.value.tid"
+                     :sent-by="source.sender"
+                     :message="v"
+                     :class="{
+                       'justify-end': source.sender.id === source.sender.id,
+                       'message-transform': !isSelfMessage,
+                       'self-message-transform': isSelfMessage,
+                     }"
+                     :display-style="i === source.messages.length - 1 ? 'tail' : 'normal'"
+                     v-observed="setObserableStateOf(v)" />
       </TransitionGroup>
     </div>
   </div>
 </template>
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { type Ref, onMounted, computed } from 'vue'
 import { MessageWarp, StackedMessage, User } from './ChatMessage';
 import MessageItem from './MessageItem.vue';
 import useChatStore, { type ChatSession } from '@/store/modules/chatStore';
+import { ACKMsgType } from './helpers/messageHelper';
 
-const { me } = useChatStore()
-const isSelfMessage = computed(() => props.source.sender.id === me?.id)
+const store = useChatStore()
+const isSelfMessage = computed(() => props.source.sender.id === store.me?.id)
+const setObserableStateOf = (message: Ref<MessageWarp>) => {
+  return (state: boolean) => {
+    if (state && (message.value._msg.senderId !== store.me?.id)) { //Do not ack self message
+      message.value.ack(ACKMsgType.READ)
+    }
+  }
+}
+
 onMounted(() => {
 })
-
-// export interface Source {
-//   stack: StackedMessage,
-//   conversation: ChatSession,
-//   sender: User,
-// }
 
 const props = defineProps({
   source: {
@@ -98,5 +111,4 @@ $font-size: 24px;
 
 .list-leave-active {
   position: absolute;
-}
-</style>
+}</style>

@@ -18,16 +18,10 @@ import {
 import { ACKUpdateLayer } from './ChatProcessors/ACKUpdateLayer'
 import EventEmitter from 'eventemitter3'
 
-const observationOptions = {
-  root: null,
-  rootMargin: '0px',
-  threshold: 0.1
-}
-
 const useChatStore = defineStore('chatStore', () => {
   const server = ref('http://localhost:3001')
   const token = ref(
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwidXNlcm5hbWUiOiJ1c2VyIiwicm9sZSI6InVzZXIiLCJpYXQiOjE2OTY2NjQzOTIsImV4cCI6MTY5OTI1NjM5Mn0.Vz5xa46oyYX5pbIphpNeuOyXvWTfBlLNH_fvv5IF6Mc'
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJhZG1pbiIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTY5NzAxMTUxNiwiZXhwIjoxNjk3MTg0MzE2fQ.LueA_q2F3bGc8vvUG2WSQ69fEypMyL4fkeO9aPyDyRQ'
   )
   const bkm = new BakaMessager({
     server: server.value,
@@ -48,6 +42,7 @@ const useChatStore = defineStore('chatStore', () => {
 const sesses: Map<number, ChatSession> = new Map()
 
 export async function updateConversation(raw: Message) {
+  console.log('updateConversation', raw)
   if (sesses.has(raw.senderId)) {
     sesses.get(raw.senderId).notify(raw)
   } else {
@@ -82,21 +77,6 @@ export class ChatSession extends EventEmitter {
    */
   private chat = shallowReactive<Map<string, Ref<MessageWarp>>>(new Map())
 
-  callback = (entries: any, observer: any) => {
-    entries.forEach((entry: any) => {
-      if (entry.isIntersecting) {
-        // console.log(`id:`, entry.target.getAttribute('msgid'), '进入可视区域')
-        this.map.get(+entry.target.getAttribute('msgid'))?.(true)
-      } else {
-        // console.log(`id:`, entry.target.getAttribute('msgid'), '离开可视区域')
-        this.map.get(+entry.target.getAttribute('msgid'))?.(false)
-      }
-    })
-  }
-
-  observer = new IntersectionObserver(this.callback, observationOptions)
-  map = new Map()
-
   processors: ProcessorLayer[] = [
     BeginProcessorLayer.instance,
     ACKUpdateLayer.instance,
@@ -119,7 +99,6 @@ export class ChatSession extends EventEmitter {
         throw e
       }
     }
-    console.log('notify and pushed', msg)
     // this is a processed message, and shall display
     // this.chat.value.push(MessageWarp.fromMessage(msg))
     this.setMsg(MessageWarp.fromMessage(msg))
@@ -132,8 +111,16 @@ export class ChatSession extends EventEmitter {
       return
     }
     console.log('setMsg', messageWarp)
+
+    if (this.chat.has(messageWarp.id)) {
+      const old = this.chat.get(messageWarp.id)
+      old.value = messageWarp
+      this.emit('update-message', old)
+      return
+    }
+
     const msgRef = ref(messageWarp)
-    this.emit('new-or-update-message', msgRef)
+    this.emit('new-message', msgRef)
     this.chat.set(messageWarp.id, msgRef)
   }
 
@@ -147,6 +134,26 @@ export class ChatSession extends EventEmitter {
     const warp = MessageWarp.fromMessage(msg)
     this.setMsg(warp)
     return msg
+  }
+
+  async sendRawQuick(content:object, flag: number) {
+    return this.conversation.send(new Message({
+      content,
+      flag,
+      receiverId: this.bindingGroup
+    }))
+  }
+
+  async sendRaw(msg: Message) {
+    return this.conversation.send(msg)
+  }
+
+  /** 
+   * @deprecated
+   * Do not use this in production
+   *  */
+  getRawChat() {
+    return this.chat
   }
 }
 

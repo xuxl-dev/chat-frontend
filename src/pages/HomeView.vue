@@ -26,7 +26,7 @@ const send = () => {
   useChatStore().getChatSession(to).send(new Message().from(me.id).text(msg.value))
 }
 const switchUser = async () => {
-  bkm.switchUser(`eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJhZG1pbiIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTY5NjY2NDQwOSwiZXhwIjoxNjk5MjU2NDA5fQ.XDXkPM3smzyY7rle2EbdL0NuoNhH55LMzB40630LFuU`)
+  bkm.switchUser(`eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwidXNlcm5hbWUiOiJ1c2VyIiwicm9sZSI6InVzZXIiLCJpYXQiOjE2OTcwMTE1ODcsImV4cCI6MTY5NzE4NDM4N30.q4Q1DtUuS8Y1sTkGHtO0XCmE9aMLodaRTa5AwxLtdpw`)
   await bkm.init()
 }
 
@@ -41,7 +41,7 @@ const switchUser = async () => {
       <p>Current user:{{ useChatStore().me?.id }}</p>
       <button @click="send">send</button> <br>
       <button @click="switchUser">switch user</button> <br>
-      <button @click="console.log(useChatStore().getChatSession(useChatStore().me.id === 1 ? 2 : 1).chat)">log chat</button> <br>
+      <button @click="console.log(useChatStore().getChatSession(useChatStore().me.id === 1 ? 2 : 1).getRawChat())">log chat</button> <br>
     </div>
   </main>
 </template>
