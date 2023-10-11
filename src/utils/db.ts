@@ -151,6 +151,14 @@ export class MessageDb extends Dexie {
       transactions(this.db);
     });
   }
+
+  /**
+   * On db upgrade
+   */
+  public async onUpgrade(oldVersion: number, newVersion: number) {
+    // do nothing yet
+  }
+
 }
 
 
