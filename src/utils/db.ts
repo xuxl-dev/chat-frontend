@@ -31,7 +31,7 @@ export class LocalMessage implements ILocalMessage {
 }
 
 export class MessageDb extends Dexie {
-  public chat!: Table<ILocalMessage, string>;
+  public chat: Table<ILocalMessage, string>;
   private db = new MessageDb();
   private static instance: MessageDb;
   public static DB_VERSION = 1;
@@ -57,6 +57,7 @@ export class MessageDb extends Dexie {
       */
       chats: "++id, &msgId, senderId, receiverId, content, sentAt, hasReadCount, flag"
     });
+    this.chat = this.table("chats");
   }
 
   public async insertMessage(message: ILocalMessage) {
