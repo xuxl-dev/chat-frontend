@@ -52,7 +52,6 @@ const setObserableStateOf = (message: Ref<MessageWarp>) => {
   }
 }
 
-
 </script>
 <style lang="scss" scoped>
 .message-container {

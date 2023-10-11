@@ -8,22 +8,9 @@ import { ref, onMounted, computed } from 'vue';
 import MsgList from './MsgList.vue';
 import useChatStore from '@/store/modules/chatStore';
 const msglistRef = ref<any | null>(null)
-
+const store = useChatStore()
 const curChannel = computed(() => {
-  return useChatStore().me?.id === 1 ? 2 : 1
-})
-
-onMounted(() => {
-  // const conv = useChatStore().getConversation(curChannel.value)
-  // const timer = setInterval(() => {
-  //   conv.notify(Object.freeze(randChat(1)[0]))
-  //   msglistRef.value?.scrollToBottom()
-  // }, 1000)
-
-  // setTimeout(() => {
-  //   clearInterval(timer)
-  //   // msglistRef.value?.scrollToBottom()
-  // }, 10000)
+  return store.me?.id === 1 ? 2 : 1
 })
 
 // idlecallback
@@ -48,10 +35,9 @@ function runChunked(task: Function, data: any[], chunkSize: number) {
 }
 
 
-
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .scroller {
   max-height: 75vh;
   padding-right: 2px;

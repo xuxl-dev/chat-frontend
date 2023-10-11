@@ -5,7 +5,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ref, onMounted, watch, computed, type Ref, shallowRef, reactive } from 'vue';
+import { ref, onMounted, watch, type Ref } from 'vue';
 import { MessageWarp, StackedMessage, User } from './ChatMessage';
 import VirtualList from './VirtualList/index.tsx';
 import MessageStack from './MessageStack.vue';
@@ -52,4 +52,4 @@ defineExpose({
 })
 
 </script>
-<style lang="scss"></style>
+<style lang="scss" scoped></style>

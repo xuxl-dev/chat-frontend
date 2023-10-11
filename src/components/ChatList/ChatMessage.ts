@@ -76,6 +76,9 @@ export class MessageWarp {
         this._msg.hasReadCount = 1
       }
     } else { // DELIVERED
+      if (this._msg.hasReadCount > 0) {
+        throw new Error('this message has been read, cannot update to DELIVERED')
+      }
       this._msg.hasReadCount = 0
     }
   }
@@ -84,11 +87,11 @@ export class MessageWarp {
    * send ack to this message
    * @param type 
    */
-  ack(type: ACKMsgType) {
+  ack(type: ACKMsgType = ACKMsgType.READ) {
     getChatSession(this.senderId).sendRawQuick(
       {
         ackMsgId: this.id,
-        type: ACKMsgType.READ
+        type: type
       },
       MessageFlag.ACK
     )
