@@ -21,7 +21,7 @@ import EventEmitter from 'eventemitter3'
 const useChatStore = defineStore('chatStore', () => {
   const server = ref('http://localhost:3001')
   const token = ref(
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJhZG1pbiIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTY5NzAxMTUxNiwiZXhwIjoxNjk3MTg0MzE2fQ.LueA_q2F3bGc8vvUG2WSQ69fEypMyL4fkeO9aPyDyRQ'
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwidXNlcm5hbWUiOiJ1c2VyIiwicm9sZSI6InVzZXIiLCJpYXQiOjE2OTcwMzYwMDgsImV4cCI6MTY5OTYyODAwOH0.HVSRijOgxKTESZaTNeBYiLxC-CMqqrCHeMSe6uCjDuY'
   )
   const bkm = new BakaMessager({
     server: server.value,
