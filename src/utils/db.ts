@@ -129,6 +129,19 @@ export class MessageDb extends Dexie {
     return await this.db.chat.delete(msgId);
   }
 
+  public async bulkDeleteMessages(msgIds: string[]) {
+    return await this.db.chat.bulkDelete(msgIds);
+  }
+
+  public async deleteByReceiverId(receiverId: number) {
+    return await this.db.chat.where({ receiverId }).delete();
+  }
+
+  /**
+   * @deprecated
+   * DANGER
+   * @returns 
+   */
   public async deleteAllMessages() {
     return await this.db.chat.clear();
   }
