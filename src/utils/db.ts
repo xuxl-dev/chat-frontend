@@ -30,21 +30,21 @@ export class LocalMessage implements ILocalMessage {
   }
 }
 
-export class MessageDb extends Dexie {
+export class Db extends Dexie {
   public chat: Table<ILocalMessage, string>;
-  private db = new MessageDb();
-  private static instance: MessageDb;
+  private db = new Db();
+  private static instance: Db;
   public static DB_VERSION = 1;
-  public get instance(): MessageDb {
-    if (!MessageDb.instance) {
-      MessageDb.instance = new MessageDb();
+  public get instance(): Db {
+    if (!Db.instance) {
+      Db.instance = new Db();
     }
-    return MessageDb.instance;
+    return Db.instance;
   }
 
   public constructor() {
     super("ChatDatabase");
-    this.version(MessageDb.DB_VERSION).stores({
+    this.version(Db.DB_VERSION).stores({
       /**
        * ++id: 自增主键
        * &msgId: 唯一索引
@@ -55,7 +55,8 @@ export class MessageDb extends Dexie {
        * hasReadCount: 普通索引
        * flag: 普通索引
       */
-      chats: "++id, &msgId, senderId, receiverId, content, sentAt, hasReadCount, flag"
+      chats: "++id, &msgId, senderId, receiverId, content, sentAt, hasReadCount, flag",
+      usermetas: "++id, &uid, name, avatar"
     });
     this.chat = this.table("chats");
   }
