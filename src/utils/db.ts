@@ -59,28 +59,82 @@ export class MessageDb extends Dexie {
     });
   }
 
-  public async addMessage(message: ILocalMessage) {
-    await this.db.chat.add(message);
+  public async insertMessage(message: ILocalMessage) {
+    if (await this.contains(message.msgId)) {
+      throw new Error(`Message ${message.msgId} already exists`);
+    }
+    return await this.db.chat.add(message);
   }
 
+  public async bulkInsertMessages(messages: ILocalMessage[]) {
+    return await this.db.chat.bulkAdd(messages);
+  }
+
+  /**
+   * @deprecated
+   * Do not use this in production
+   * @returns 
+   */
   public async getMessages() {
     return await this.db.chat.toArray();
   }
 
+  public async getMessageBetween(senderId: number, receiverId: number, from: Date, to: Date, limit: number = 100, offset: number = 0) {
+    return await this.db.chat.where({ senderId, receiverId }).and((message: ILocalMessage) => {
+      return message.sentAt >= from && message.sentAt <= to;
+    }).reverse().offset(offset).limit(limit).sortBy('date');
+  }
+
+  public async getMessageFrom(senderId: number, from: Date, to: Date, limit: number = 100, offset: number = 0) {
+    return await this.db.chat.where({ senderId }).and((message: ILocalMessage) => {
+      return message.sentAt >= from && message.sentAt <= to;
+    }).reverse().offset(offset).limit(limit).sortBy('date');
+  }
+
+  public async getMessageTo(receiverId: number, from: Date, to: Date, limit: number = 100, offset: number = 0) {
+    return await this.db.chat.where({ receiverId }).and((message: ILocalMessage) => {
+      return message.sentAt >= from && message.sentAt <= to;
+    }).reverse().offset(offset).limit(limit).sortBy('date');
+  }
+
+  public async getMessageById(msgId: string) {
+    return await this.db.chat.get(msgId);
+  }
+
+  public async getMessageByIdOrFail(msgId: string) {
+    const message = await this.db.chat.get(msgId);
+    if (!message) {
+      throw new Error(`Message ${msgId} not found`);
+    }
+    return message;
+  }
+
+  public async contains(msgId: string) {
+    return await this.db.chat.where({ msgId }).count() > 0;
+  }
+
   public async updateMessage(message: ILocalMessage) {
-    await this.db.chat.update(message.msgId, message);
+    return await this.db.chat.update(message.msgId, message);
+  }
+
+  public async bulkUpdateMessages(messages: ILocalMessage[]) {
+    return await this.db.chat.bulkPut(messages);
+  }
+
+  public async upsertMessage(message: ILocalMessage) {
+    return await this.db.chat.put(message);
   }
 
   public async deleteMessage(msgId: string) {
-    await this.db.chat.delete(msgId);
+    return await this.db.chat.delete(msgId);
   }
 
   public async deleteAllMessages() {
-    await this.db.chat.clear();
+    return await this.db.chat.clear();
   }
 
   public async beginTransaction(transactions: (db: any) => void | ((db: any) => Promise<void>), mode: TransactionMode = 'rw') {
-    await this.db.transaction(mode, this.db.chat, async () => {
+    return await this.db.transaction(mode, this.db.chat, async () => {
       transactions(this.db);
     });
   }
