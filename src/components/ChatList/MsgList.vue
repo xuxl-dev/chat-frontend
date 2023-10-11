@@ -11,7 +11,6 @@ import VirtualList from './VirtualList/index.tsx';
 import MessageStack from './MessageStack.vue';
 import { getChatSession } from '../../store/modules/chatStore';
 
-
 const props = defineProps({
   channel: {
     type: Number,
@@ -20,10 +19,6 @@ const props = defineProps({
 })
 
 const getKey = (item: StackedMessage) => item.stack_id
-
-// let source = computed(() => {
-//   return Array.from(getChatSession(props.channel).chat.values()).map(msg => new StackedMessage([msg.value]))
-// })
 const source = ref<Ref<StackedMessage[]>>(ref([]))
 
 const virtualListRef = ref<any | null>(null)
@@ -53,9 +48,6 @@ const scrollToBottom = () => {
 }
 
 defineExpose({
-  lastStack,
-  getKey,
-  virtualListRef,
   scrollToBottom
 })
 

@@ -72,8 +72,9 @@ export class MessageWarp {
     if (type === ACKMsgType.READ) {
       if (this._msg.hasReadCount > 0) {
         this._msg.hasReadCount += 1
+      } else {
+        this._msg.hasReadCount = 1
       }
-      this._msg.hasReadCount = 1
     } else { // DELIVERED
       this._msg.hasReadCount = 0
     }

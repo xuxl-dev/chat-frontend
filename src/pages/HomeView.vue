@@ -7,14 +7,6 @@ import { getStatus } from "@/apis/modules/userMeta";
 const { bkm } = useChatStore()
 
 onMounted(async () => {
-  // if (await getStatus(2) !== 'ONLINE') {
-  //   console.log('init')
-  //   await bkm.init()
-  //   console.log('init done')
-  // } else {
-  //   console.log('switch')
-  //   await switchUser()
-  // }
   await bkm.init()
   console.log(bkm.user)
 })
@@ -26,7 +18,7 @@ const send = () => {
   useChatStore().getChatSession(to).send(new Message().from(me.id).text(msg.value))
 }
 const switchUser = async () => {
-  bkm.switchUser(`eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwidXNlcm5hbWUiOiJ1c2VyIiwicm9sZSI6InVzZXIiLCJpYXQiOjE2OTcwMTE1ODcsImV4cCI6MTY5NzE4NDM4N30.q4Q1DtUuS8Y1sTkGHtO0XCmE9aMLodaRTa5AwxLtdpw`)
+  bkm.switchUser(`eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJhZG1pbiIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTY5NzAzNTk1MiwiZXhwIjoxNjk5NjI3OTUyfQ.-PG_PGdZJTtpTjMgHmtQOW8g_oOdlOk1Q8neR0q-4Ns`)
   await bkm.init()
 }
 
