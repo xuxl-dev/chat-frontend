@@ -64,25 +64,38 @@ export class MessageWarp {
   }
 
 
-  ack(type: ACKMsgType) {
+  /**
+   * when receive a ack message, update this message
+   * @param type 
+   */
+  updateAck(type: ACKMsgType) {
     if (type === ACKMsgType.READ) {
       if (this._msg.hasReadCount > 0) {
         this._msg.hasReadCount += 1
       }
       this._msg.hasReadCount = 1
-      getChatSession(this.senderId).sendRawQuick(
-        {
-          ackMsgId: this.id,
-          type: ACKMsgType.READ
-        },
-        MessageFlag.ACK
-      )
-
     } else { // DELIVERED
       this._msg.hasReadCount = 0
     }
   }
+
+  /**
+   * send ack to this message
+   * @param type 
+   */
+  ack(type: ACKMsgType) {
+    getChatSession(this.senderId).sendRawQuick(
+      {
+        ackMsgId: this.id,
+        type: ACKMsgType.READ
+      },
+      MessageFlag.ACK
+    )
+  }
+
 }
+
+
 
 export class StackedMessage {
   static _stack_id = 0
