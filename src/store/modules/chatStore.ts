@@ -18,12 +18,6 @@ import {
 import { ACKUpdateLayer } from './ChatProcessors/ACKUpdateLayer'
 import EventEmitter from 'eventemitter3'
 
-const observationOptions = {
-  root: null,
-  rootMargin: '0px',
-  threshold: 0.1
-}
-
 const useChatStore = defineStore('chatStore', () => {
   const server = ref('http://localhost:3001')
   const token = ref(
@@ -82,21 +76,6 @@ export class ChatSession extends EventEmitter {
    */
   private chat = shallowReactive<Map<string, Ref<MessageWarp>>>(new Map())
 
-  callback = (entries: any, observer: any) => {
-    entries.forEach((entry: any) => {
-      if (entry.isIntersecting) {
-        // console.log(`id:`, entry.target.getAttribute('msgid'), '进入可视区域')
-        this.map.get(+entry.target.getAttribute('msgid'))?.(true)
-      } else {
-        // console.log(`id:`, entry.target.getAttribute('msgid'), '离开可视区域')
-        this.map.get(+entry.target.getAttribute('msgid'))?.(false)
-      }
-    })
-  }
-
-  observer = new IntersectionObserver(this.callback, observationOptions)
-  map = new Map()
-
   processors: ProcessorLayer[] = [
     BeginProcessorLayer.instance,
     ACKUpdateLayer.instance,
@@ -147,6 +126,18 @@ export class ChatSession extends EventEmitter {
     const warp = MessageWarp.fromMessage(msg)
     this.setMsg(warp)
     return msg
+  }
+
+  async sendRawQuick(content:object, flag: number) {
+    return this.conversation.send(new Message({
+      content,
+      flag,
+      receiverId: this.bindingGroup
+    }))
+  }
+
+  async sendRaw(msg: Message) {
+    return this.conversation.send(msg)
   }
 
   /** 

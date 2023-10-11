@@ -43,14 +43,7 @@ const { me, getChatSession } = useChatStore()
 const msgRef = ref<HTMLElement | null>(null)
 
 onMounted(() => {
-  const conversation = getChatSession(props.message.value.senderId)
-  if (!msgRef.value) return
-  // console.log(props.message)
-  if (conversation.map.has(+props.message.value.id) || !props.message.value.id) {
-    return
-  }
-  conversation.observer.observe(msgRef.value)
-  conversation.map.set(+props.message.value.id, setObservableState)
+
 })
 
 const props = defineProps({
@@ -86,18 +79,13 @@ const receipt = computed(() => {
 });
 
 
-const canBeSeen = ref(false);
-const setObservableState = (state: boolean) => {
-  canBeSeen.value = state;
-};
+
 
 defineExpose({
   msgRef,
   msg,
   isSelfMessage,
   receipt,
-  canBeSeen,
-  setObservableState,
 });
 
 </script>

@@ -12,28 +12,31 @@
           'justify-end': source.sender.id === source.sender.id,
           'message-transform': !isSelfMessage,
           'self-message-transform': isSelfMessage,
-        }" :display-style="i === source.messages.length - 1 ? 'tail' : 'normal'"
-          />
+        }" :display-style="i === source.messages.length - 1 ? 'tail' : 'normal'" v-observed="setObserableStateOf(v)" />
       </TransitionGroup>
     </div>
   </div>
 </template>
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { type Ref, onMounted, computed } from 'vue'
 import { MessageWarp, StackedMessage, User } from './ChatMessage';
 import MessageItem from './MessageItem.vue';
 import useChatStore, { type ChatSession } from '@/store/modules/chatStore';
+import { ACKMsgType } from './helpers/messageHelper';
 
-const { me } = useChatStore()
-const isSelfMessage = computed(() => props.source.sender.id === me?.id)
+const store = useChatStore()
+const isSelfMessage = computed(() => props.source.sender.id === store.me?.id)
+const setObserableStateOf = (message: Ref<MessageWarp>) => {
+  return (state: boolean) => {
+    if (state && message.value._msg.senderId !== store.me?.id) { //Do not ack self message
+      console.log('seen', message.value.sender.id, message.value)
+      message.value.ack(ACKMsgType.READ)
+    }
+  }
+}
+
 onMounted(() => {
 })
-
-// export interface Source {
-//   stack: StackedMessage,
-//   conversation: ChatSession,
-//   sender: User,
-// }
 
 const props = defineProps({
   source: {

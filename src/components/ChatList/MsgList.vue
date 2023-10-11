@@ -39,7 +39,6 @@ watch(() => props.channel, (newVal, oldVal) => {
       return
     }
     source.value.push(new StackedMessage([warp]))
-    console.log(`source`, source)
   })
 }, { immediate: true })
 

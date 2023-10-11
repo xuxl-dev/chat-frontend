@@ -540,11 +540,6 @@ class MessageReceiver implements MessageHandler {
     return !(msg.flag & MessageFlag.ACK)
   }
   handler: (msg: Message) => any = async (msg) => {
-    // pretent to wait for 1 second
-    await new Promise((resolve) => {
-      setTimeout(resolve, randBetween(500, 2000))
-    })
-
     await this.ctx.sendMessage(
       {
         ackMsgId: msg.msgId,
@@ -553,18 +548,13 @@ class MessageReceiver implements MessageHandler {
       MessageFlag.ACK
     )
 
-    // pretent to wait for 1 second
-    await new Promise((resolve) => {
-      setTimeout(resolve, randBetween(500, 3000))
-    })
-
-    await this.ctx.sendMessage( //TODO implement read
-      {
-        ackMsgId: msg.msgId,
-        type: ACKMsgType.READ
-      },
-      MessageFlag.ACK
-    )
+    // await this.ctx.sendMessage( //TODO implement read
+    //   {
+    //     ackMsgId: msg.msgId,
+    //     type: ACKMsgType.READ
+    //   },
+    //   MessageFlag.ACK
+    // )
   }
   ctx: ConversationCtx
   passthrough?: boolean = true
@@ -621,6 +611,7 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
   }
 
   quickMessage(content: object, flag: MessageFlag, to: number) {
+    console.log('quick message: ', content)
     this.socket.emit(
       'message',
       Message.new({
@@ -634,6 +625,9 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
   async sendMessage(msg: Message) {
     return new Promise<Message>((resolve, reject) => { //TODO, add timeout
       console.log('sent message: ', msg)
+      // if (msg.receiverId === this.user?.id) {
+      //   throw new Error('cannot send message to self')
+      // }
       this.socket.emit('message', msg, (ret: Message) => {
         resolve(ret as Message)
       })
@@ -672,6 +666,7 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
     if (!this.conversationMap.has(msg.senderId)) {
       this.newConversation(msg.senderId)
     }
+    console.log('stack trace: ', new Error().stack)
     this.conversationMap.get(msg.senderId).notify(msg)
     // this.notifyNewMessage(msg) //TODO: this is for test only, delete this
   }

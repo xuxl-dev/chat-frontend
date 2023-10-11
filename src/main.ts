@@ -10,6 +10,7 @@ import Axios from './apis/ajax'
 // import mountElementUI from './utils/elementUI'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import Sticky from 'vue-sticky-directive'
+import intersectionObserverOption from './directives/intersectionObserver'
 
 document.title = import.meta.env.VITE_APP_TITLE
 
@@ -29,6 +30,9 @@ app.directive('sticky', {
     el.style.top = offset + 'px';
   },
 });
+
+app.directive('observed', intersectionObserverOption)
+
 
 app.use(router)
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {

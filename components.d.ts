@@ -8,6 +8,7 @@ declare module '@vue/runtime-core' {
     ChatList: typeof import('./src/components/ChatList/index.vue')['default']
     ChatMessageDisplay: typeof import('./src/components/ChatList/ChatMessageDisplay.vue')['default']
     Checked: typeof import('./src/components/ChatList/icons/Checked.vue')['default']
+    CircleChecked: typeof import('./src/components/ChatList/icons/CircleChecked.vue')['default']
     ContextMenu: typeof import('./src/components/ChatList/ContextMenu/index.vue')['default']
     DoubleChecked: typeof import('./src/components/ChatList/icons/DoubleChecked.vue')['default']
     ElAvatar: typeof import('element-plus/es')['ElAvatar']
