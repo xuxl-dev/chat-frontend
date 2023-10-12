@@ -42,13 +42,17 @@ const useChatStore = defineStore('chatStore', () => {
 const sesses: Map<number, ChatSession> = new Map()
 
 export async function updateConversation(raw: Message) {
-  console.log('updateConversation', raw)
   if (sesses.has(raw.senderId)) {
     sesses.get(raw.senderId).notify(raw)
   } else {
     const conversation = await new ChatSession(raw.senderId).notify(raw)
     sesses.set(raw.senderId, conversation)
   }
+  storeMsgToDb(raw)
+}
+
+function storeMsgToDb(msg: Message) {
+  //TODO: implement this
 }
 
 export function getChatSession(id: number) {

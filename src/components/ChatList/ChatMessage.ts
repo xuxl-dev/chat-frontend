@@ -18,7 +18,6 @@ export class MessageWarp {
     return warp
   }
 
-
   get senderId(): number {
     return this._msg.senderId
   }
