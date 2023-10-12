@@ -56,7 +56,7 @@ export class Db extends Dexie {
        * flag: 普通索引
       */
       chats: "++id, &msgId, senderId, receiverId, content, sentAt, hasReadCount, flag",
-      usermetas: "++id, &uid, name, avatar"
+      usermetas: "++id, &uid, name, avatar",
     });
     this.chat = this.table("chats");
   }

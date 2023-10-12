@@ -378,7 +378,6 @@ export class Conversation extends EventEmitter {
    */
   public async send(message: Message) {
     message.receiverId = this.group
-    console.log(' this.group: ',  this.group)
     for (const handler of this.send_pipeline) {
       if (handler.pattern(message)) {
         await handler.handler(message)

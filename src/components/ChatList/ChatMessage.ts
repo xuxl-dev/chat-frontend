@@ -15,12 +15,6 @@ export class MessageWarp {
   static fromMessage(message: Message): MessageWarp {
     const warp = new MessageWarp()
     warp._msg = message
-    if (message.msgId) {
-      console.log('set', message.msgId, warp)
-    }
-    // these messages sent by me has no msgId,
-    // they are processed when sent is done, server will send back a msgId
-
     return warp
   }
 
@@ -96,7 +90,6 @@ export class MessageWarp {
       MessageFlag.ACK
     )
   }
-
 }
 
 
