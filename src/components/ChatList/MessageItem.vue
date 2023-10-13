@@ -9,8 +9,6 @@
       'left-tailed': displayStyle === 'tail' && !isSelfMessage,
       'right-tailed': displayStyle === 'tail' && isSelfMessage,
     }">
-      <button @click="console.log(message)">LogMe</button> <br>
-
       {{ message.value.text }}
       <div class="flex float-right">
         <div class="receipt" :class="{
