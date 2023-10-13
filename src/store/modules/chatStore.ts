@@ -50,7 +50,7 @@ export async function updateConversation(raw: Message) {
   }
 }
 
-export const SyncMsg = async (msg: Message) => {
+const SyncMsg = async (msg: Message) => {
   try {
     return await Db.instance().upsertMessage(new LocalMessage(msg))
   } catch (e) {

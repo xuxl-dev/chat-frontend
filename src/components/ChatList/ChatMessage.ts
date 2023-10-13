@@ -1,6 +1,6 @@
 import type { Ref } from 'vue'
 import { ACKMsgType, getMessageStr, MessageFlag, type Message } from './helpers/messageHelper'
-import useChatStore, { SyncMsg, debounceSyncMsg, getChatSession } from '@/store/modules/chatStore'
+import useChatStore, { debounceSyncMsg, getChatSession } from '@/store/modules/chatStore'
 
 export class MessageWarp {
   static _id = 0
