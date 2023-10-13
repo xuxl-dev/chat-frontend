@@ -5,18 +5,15 @@ import {
 } from '@/components/ChatList/helpers/messageHelper'
 
 export interface ILocalMessage extends IMessage {
-  id: number
 }
 
 export interface IUserMeta {
-  id: number
   uid: string
   name: string
   avatar: string
 }
 
 export interface IResource {
-  id?: number
   md5: string
   url: string
   type: string
@@ -50,22 +47,20 @@ export class LocalMessage implements ILocalMessage {
     return new LocalMessage(message)
   }
 }
-
+const DB_VERSION = 3
 export class Db extends Dexie {
   public chat: Table<ILocalMessage, string>
   public usermetas: Table<IUserMeta, string>
   public resources: Table<IResource, string>
 
-  private db = new Db()
   private static _instance: Db = new Db()
-  public static DB_VERSION = 1
   public static instance(): Db {
     return Db._instance
   }
 
   private constructor() {
     super('ChatDatabase')
-    this.version(Db.DB_VERSION).stores({
+    this.version(DB_VERSION).stores({
       /**
        * ++id: 自增主键
        * &msgId: 唯一索引
@@ -77,9 +72,9 @@ export class Db extends Dexie {
        * flag: 普通索引
        */
       chats:
-        '++id, &msgId, senderId, receiverId, content, sentAt, hasReadCount, flag',
-      usermetas: '++id, &uid, name, avatar',
-      resources: '++id, &md5, &url, type, size, name, lastModified, blob'
+        '&msgId, senderId, receiverId, content, sentAt, hasReadCount, flag',
+      usermetas: '&uid, name, avatar',
+      resources: '&md5, &url, type, size, name, lastModified, blob'
     })
     this.chat = this.table('chats')
 
@@ -89,11 +84,11 @@ export class Db extends Dexie {
     if (await this.contains(message.msgId)) {
       throw new Error(`Message ${message.msgId} already exists`)
     }
-    return await this.db.chat.add(message)
+    return await this.chat.add(message)
   }
 
   public async bulkInsertMessages(messages: ILocalMessage[]) {
-    return await this.db.chat.bulkAdd(messages)
+    return await this.chat.bulkAdd(messages)
   }
 
   /**
@@ -102,7 +97,7 @@ export class Db extends Dexie {
    * @returns
    */
   public async getMessages() {
-    return await this.db.chat.toArray()
+    return await this.chat.toArray()
   }
 
   public async getMessageBetween(
@@ -113,7 +108,7 @@ export class Db extends Dexie {
     limit: number = 100,
     offset: number = 0
   ) {
-    return await this.db.chat
+    return await this.chat
       .where({ senderId, receiverId })
       .and((message: ILocalMessage) => {
         return message.sentAt >= from && message.sentAt <= to
@@ -131,7 +126,7 @@ export class Db extends Dexie {
     limit: number = 100,
     offset: number = 0
   ) {
-    return await this.db.chat
+    return await this.chat
       .where({ senderId })
       .and((message: ILocalMessage) => {
         return message.sentAt >= from && message.sentAt <= to
@@ -149,7 +144,7 @@ export class Db extends Dexie {
     limit: number = 100,
     offset: number = 0
   ) {
-    return await this.db.chat
+    return await this.chat
       .where({ receiverId })
       .and((message: ILocalMessage) => {
         return message.sentAt >= from && message.sentAt <= to
@@ -161,11 +156,11 @@ export class Db extends Dexie {
   }
 
   public async getMessageById(msgId: string) {
-    return await this.db.chat.get(msgId)
+    return await this.chat.get(msgId)
   }
 
   public async getMessageByIdOrFail(msgId: string) {
-    const message = await this.db.chat.get(msgId)
+    const message = await this.chat.get(msgId)
     if (!message) {
       throw new Error(`Message ${msgId} not found`)
     }
@@ -173,31 +168,32 @@ export class Db extends Dexie {
   }
 
   public async contains(msgId: string) {
-    return (await this.db.chat.where({ msgId }).count()) > 0
+    return (await this.chat.where({ msgId }).count()) > 0
   }
 
   public async updateMessage(message: ILocalMessage) {
-    return await this.db.chat.update(message.msgId, message)
+    return await this.chat.update(message.msgId, message)
   }
 
   public async bulkUpdateMessages(messages: ILocalMessage[]) {
-    return await this.db.chat.bulkPut(messages)
+    return await this.chat.bulkPut(messages)
   }
 
   public async upsertMessage(message: ILocalMessage) {
-    return await this.db.chat.put(message)
+    console.log('upsertMessage', message)
+    return await this.chat.put(message)
   }
 
   public async deleteMessage(msgId: string) {
-    return await this.db.chat.delete(msgId)
+    return await this.chat.delete(msgId)
   }
 
   public async bulkDeleteMessages(msgIds: string[]) {
-    return await this.db.chat.bulkDelete(msgIds)
+    return await this.chat.bulkDelete(msgIds)
   }
 
   public async deleteByReceiverId(receiverId: number) {
-    return await this.db.chat.where({ receiverId }).delete()
+    return await this.chat.where({ receiverId }).delete()
   }
 
   /**
@@ -206,48 +202,48 @@ export class Db extends Dexie {
    * @returns
    */
   public async deleteAllMessages() {
-    return await this.db.chat.clear()
+    return await this.chat.clear()
   }
 
   public async beginTransaction(
     transactions: (db: any) => void | ((db: any) => Promise<void>),
     mode: TransactionMode = 'rw'
   ) {
-    return await this.db.transaction(mode, this.db.chat, async () => {
-      transactions(this.db)
+    return await this.transaction(mode, this.chat, async () => {
+      transactions(this)
     })
   }
 
   async getResourceByMd5(md5: string) {
-    return await this.db.resources.get(md5)
+    return await this.resources.get(md5)
   }
 
   async getResourceByUrl(url: string) {
-    return await this.db.resources.get(url)
+    return await this.resources.get(url)
   }
 
   async hasResourceByMd5(md5: string) {
-    return (await this.db.resources.where({ md5 }).count()) > 0
+    return (await this.resources.where({ md5 }).count()) > 0
   }
 
   async hasResourceByUrl(url: string) {
-    return (await this.db.resources.where({ url }).count()) > 0
+    return (await this.resources.where({ url }).count()) > 0
   }
 
   async removeResourceByMd5(md5: string) {
-    return await this.db.resources.delete(md5)
+    return await this.resources.delete(md5)
   }
 
   async removeResourceByUrl(url: string) {
-    return await this.db.resources.delete(url)
+    return await this.resources.delete(url)
   }
 
   async addResource(resource: Omit<IResource, 'id'>) {
-    return await this.db.resources.add(resource)
+    return await this.resources.add(resource)
   }
 
   async clearResources() {
-    return await this.db.resources.clear()
+    return await this.resources.clear()
   }
 
   /**

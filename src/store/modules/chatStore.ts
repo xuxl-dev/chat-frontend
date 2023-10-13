@@ -5,7 +5,7 @@ import {
   Message
 } from '@/components/ChatList/helpers/messageHelper'
 import { defineStore } from 'pinia'
-import { reactive, ref, shallowReactive, type Ref, triggerRef } from 'vue'
+import { reactive, ref, shallowReactive, type Ref, triggerRef, watch } from 'vue'
 import {
   BeginProcessorLayer,
   EndProcessorLayer,
@@ -16,6 +16,7 @@ import { ACKUpdateLayer } from './ChatProcessors/ACKUpdateLayer'
 import EventEmitter from 'eventemitter3'
 import { Db, LocalMessage } from '@/utils/db'
 import { retry } from '@/utils/utils'
+import { advancedDebounce } from '@/utils/debounce'
 
 const useChatStore = defineStore('chatStore', () => {
   const server = ref('http://localhost:3001')
@@ -47,16 +48,17 @@ export async function updateConversation(raw: Message) {
     const conversation = await new ChatSession(raw.senderId).notify(raw)
     sesses.set(raw.senderId, conversation)
   }
-  SyncMsg(raw)
 }
 
-function SyncMsg(msg: Message) {
+export const SyncMsg = async (msg: Message) => {
   try {
-    retry(() => Db.instance().upsertMessage(new LocalMessage(msg)), 100, 3)
+    return await Db.instance().upsertMessage(new LocalMessage(msg))
   } catch (e) {
     console.error(e)
   }
 }
+
+export const debounceSyncMsg = advancedDebounce(SyncMsg, 500, 1000)
 
 export function getChatSession(id: number) {
   if (!sesses.has(id)) {
@@ -74,6 +76,10 @@ export class ChatSession extends EventEmitter {
     this.bindingGroup = bindingGroup
     this.conversation = useChatStore().bkm.getConversation(bindingGroup)
     this.setNexts()
+
+    // watch(()=> this.chat, (newVal, oldVal) => {
+    //   console.log('chat changed', newVal, oldVal)
+    // })
   }
 
   // chat = ref<MessageWarp[]>([])
@@ -117,7 +123,8 @@ export class ChatSession extends EventEmitter {
       console.log(messageWarp, `messageWarp.id is not set`)
       return
     }
-    // console.log('setMsg', messageWarp)
+
+    console.log('setMsg', messageWarp)
 
     if (this.chat.has(messageWarp.id)) {
       const old = this.chat.get(messageWarp.id)
@@ -129,6 +136,10 @@ export class ChatSession extends EventEmitter {
     const msgRef = ref(messageWarp)
     this.emit('new-message', msgRef)
     this.chat.set(messageWarp.id, msgRef)
+
+    // the message here are these which owns a bubble, both sent and received
+    // SyncMsg(messageWarp._msg)
+    debounceSyncMsg(messageWarp._msg.msgId, messageWarp._msg)
   }
 
   getMsgRef(id: string) {
