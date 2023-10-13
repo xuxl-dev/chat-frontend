@@ -1,7 +1,4 @@
-import {
-  MessageWarp,
-  User
-} from '@/components/ChatList/ChatMessage'
+import { MessageWarp, User } from '@/components/ChatList/ChatMessage'
 import {
   BakaMessager,
   Conversation,
@@ -13,10 +10,12 @@ import {
   BeginProcessorLayer,
   EndProcessorLayer,
   ProcessEndException,
-  type ProcessorLayer,
+  type ProcessorLayer
 } from './ChatProcessors/base'
 import { ACKUpdateLayer } from './ChatProcessors/ACKUpdateLayer'
 import EventEmitter from 'eventemitter3'
+import { Db, LocalMessage } from '@/utils/db'
+import { retry } from '@/utils/utils'
 
 const useChatStore = defineStore('chatStore', () => {
   const server = ref('http://localhost:3001')
@@ -48,11 +47,15 @@ export async function updateConversation(raw: Message) {
     const conversation = await new ChatSession(raw.senderId).notify(raw)
     sesses.set(raw.senderId, conversation)
   }
-  storeMsgToDb(raw)
+  SyncMsg(raw)
 }
 
-function storeMsgToDb(msg: Message) {
-  //TODO: implement this
+function SyncMsg(msg: Message) {
+  try {
+    retry(() => Db.instance().upsertMessage(new LocalMessage(msg)), 100, 3)
+  } catch (e) {
+    console.error(e)
+  }
 }
 
 export function getChatSession(id: number) {
@@ -76,7 +79,7 @@ export class ChatSession extends EventEmitter {
   // chat = ref<MessageWarp[]>([])
   /**
    * Do not use this directly, use `getChatSession(id).chat.get(id)` instead
-   * 
+   *
    * this will not trigger update when new message comes
    */
   private chat = shallowReactive<Map<string, Ref<MessageWarp>>>(new Map())
@@ -114,7 +117,7 @@ export class ChatSession extends EventEmitter {
       console.log(messageWarp, `messageWarp.id is not set`)
       return
     }
-    console.log('setMsg', messageWarp)
+    // console.log('setMsg', messageWarp)
 
     if (this.chat.has(messageWarp.id)) {
       const old = this.chat.get(messageWarp.id)
@@ -140,19 +143,21 @@ export class ChatSession extends EventEmitter {
     return msg
   }
 
-  async sendRawQuick(content:object, flag: number) {
-    return this.conversation.send(new Message({
-      content,
-      flag,
-      receiverId: this.bindingGroup
-    }))
+  async sendRawQuick(content: object, flag: number) {
+    return this.conversation.send(
+      new Message({
+        content,
+        flag,
+        receiverId: this.bindingGroup
+      })
+    )
   }
 
   async sendRaw(msg: Message) {
     return this.conversation.send(msg)
   }
 
-  /** 
+  /**
    * @deprecated
    * Do not use this in production
    *  */
