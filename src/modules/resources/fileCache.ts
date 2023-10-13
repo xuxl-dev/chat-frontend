@@ -1,4 +1,4 @@
-class FileObject implements PromiseLike<Blob> {
+export class FileObject implements PromiseLike<Blob> {
   public readonly name: string
   public readonly url: string
   public readonly type: string
@@ -37,7 +37,7 @@ class FileObject implements PromiseLike<Blob> {
   }
 }
 
-class FileCache {
+export class FileCache {
   private cache: Map<string, FileObject> = new Map()
 
   public get(key: string): FileObject | undefined {
@@ -56,7 +56,7 @@ class FileCache {
 /**
  * A LRU cache for files, these files must be already fetched
  */
-class FileLRUCache {
+export class FileLRUCache {
   private cache: Map<string, FileObject> = new Map()
   private lru: string[] = []
   private maxCacheSize: number = 256 * 1024 * 1024 // max size in bytes
