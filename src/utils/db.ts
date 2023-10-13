@@ -4,8 +4,26 @@ import {
   type IMessage
 } from '@/components/ChatList/helpers/messageHelper'
 
-interface ILocalMessage extends IMessage {
+export interface ILocalMessage extends IMessage {
   id: number
+}
+
+export interface IUserMeta {
+  id: number
+  uid: string
+  name: string
+  avatar: string
+}
+
+export interface IResource {
+  id?: number
+  md5: string
+  url: string
+  type: string
+  size: number
+  name: string
+  lastModified: number
+  blob: Blob
 }
 
 export class LocalMessage implements ILocalMessage {
@@ -35,6 +53,9 @@ export class LocalMessage implements ILocalMessage {
 
 export class Db extends Dexie {
   public chat: Table<ILocalMessage, string>
+  public usermetas: Table<IUserMeta, string>
+  public resources: Table<IResource, string>
+
   private db = new Db()
   private static _instance: Db = new Db()
   public static DB_VERSION = 1
@@ -57,9 +78,11 @@ export class Db extends Dexie {
        */
       chats:
         '++id, &msgId, senderId, receiverId, content, sentAt, hasReadCount, flag',
-      usermetas: '++id, &uid, name, avatar'
+      usermetas: '++id, &uid, name, avatar',
+      resources: '++id, &md5, &url, type, size, name, lastModified, blob'
     })
     this.chat = this.table('chats')
+
   }
 
   public async insertMessage(message: ILocalMessage) {
@@ -193,6 +216,38 @@ export class Db extends Dexie {
     return await this.db.transaction(mode, this.db.chat, async () => {
       transactions(this.db)
     })
+  }
+
+  async getResourceByMd5(md5: string) {
+    return await this.db.resources.get(md5)
+  }
+
+  async getResourceByUrl(url: string) {
+    return await this.db.resources.get(url)
+  }
+
+  async hasResourceByMd5(md5: string) {
+    return (await this.db.resources.where({ md5 }).count()) > 0
+  }
+
+  async hasResourceByUrl(url: string) {
+    return (await this.db.resources.where({ url }).count()) > 0
+  }
+
+  async removeResourceByMd5(md5: string) {
+    return await this.db.resources.delete(md5)
+  }
+
+  async removeResourceByUrl(url: string) {
+    return await this.db.resources.delete(url)
+  }
+
+  async addResource(resource: Omit<IResource, 'id'>) {
+    return await this.db.resources.add(resource)
+  }
+
+  async clearResources() {
+    return await this.db.resources.clear()
   }
 
   /**
