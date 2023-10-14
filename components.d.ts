@@ -5,6 +5,7 @@ import '@vue/runtime-core'
 
 declare module '@vue/runtime-core' {
   export interface GlobalComponents {
+    Addgroup: typeof import('./src/components/GroupList/component/header/addgroup.vue')['default']
     Avatar: typeof import('./src/components/header/components/avatar.vue')['default']
     Breadcrumb: typeof import('./src/components/header/components/breadcrumb.vue')['default']
     ChatList: typeof import('./src/components/ChatList/index.vue')['default']
@@ -12,7 +13,9 @@ declare module '@vue/runtime-core' {
     Checked: typeof import('./src/components/ChatList/icons/Checked.vue')['default']
     CircleChecked: typeof import('./src/components/ChatList/icons/CircleChecked.vue')['default']
     ContextMenu: typeof import('./src/components/ChatList/ContextMenu/index.vue')['default']
+    DeletGroup: typeof import('./src/components/GroupList/component/deletGroup.vue')['default']
     DoubleChecked: typeof import('./src/components/ChatList/icons/DoubleChecked.vue')['default']
+    EditGroup: typeof import('./src/components/GroupList/component/editGroup.vue')['default']
     ElAside: typeof import('element-plus/es')['ElAside']
     ElAvatar: typeof import('element-plus/es')['ElAvatar']
     ElBadge: typeof import('element-plus/es')['ElBadge']
@@ -25,6 +28,7 @@ declare module '@vue/runtime-core' {
     ElDropdownMenu: typeof import('element-plus/es')['ElDropdownMenu']
     ElHeader: typeof import('element-plus/es')['ElHeader']
     ElIcon: typeof import('element-plus/es')['ElIcon']
+    ElInput: typeof import('element-plus/es')['ElInput']
     ElMain: typeof import('element-plus/es')['ElMain']
     ElMenu: typeof import('element-plus/es')['ElMenu']
     ElMenuItem: typeof import('element-plus/es')['ElMenuItem']

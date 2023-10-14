@@ -1,4 +1,12 @@
 <template class="grouplist">
+  <div class="header">
+    <div class="searchbar">
+      <searchbar />
+    </div>
+    <div class="addGroup">
+      <el-button type="primary" :icon="Plus" circle @click="addgroup()" />
+    </div>
+  </div>
   <div>
     <Group :group="group" v-for="(group, i) in groups" :key="i"></Group>
   </div>
@@ -6,10 +14,12 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import ChatList from '@/components/ChatList/index.vue'
-import { Calendar } from '@element-plus/icons-vue'
 import Group from './component/group.vue'
 import groupStore from '@/store/modules/groupStore'
+import searchbar from './component/header/searchbar.vue'
+import { Plus } from '@element-plus/icons-vue'
+
+function addgroup() {}
 
 const { groups, selectedGroup } = groupStore()
 </script>
@@ -27,5 +37,22 @@ const { groups, selectedGroup } = groupStore()
 }
 .el-tabs {
   height: 100%;
+}
+
+.header {
+  height: 60px;
+  width: 100%;
+}
+
+.searchbar {
+  width: 90%;
+  height: 60px;
+  display: inline-block;
+}
+
+.addGroup {
+  width: 10%;
+  height: 60px;
+  display: inline-block;
 }
 </style>
