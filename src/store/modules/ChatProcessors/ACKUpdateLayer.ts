@@ -12,7 +12,12 @@ export class ACKUpdateLayer extends ProcessorBase {
   process: (msg: Message) => Promise<Message> = async (msg: Message) => {
     if (isFlagSet(MessageFlag.ACK, msg) && typeof msg.content !== 'string') {
       const ref = getChatSession(msg.senderId)?.getMsgRef(msg.content.ackMsgId)
-      if (!ref) return this.next(msg)
+      if (!ref) {
+        console.warn(`ACKUpdateLayer: ack of unknown message ${msg.content.ackMsgId}, dropped`)
+        throw new ProcessEndException() // drop this message
+        //TODO: handle this
+        // this may ack to a history message
+      }
       ref.value.updateAck(msg.content.type)
       throw new ProcessEndException()
     }

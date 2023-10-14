@@ -29,6 +29,10 @@ export class MessageWarp {
     return this._msg.senderId
   }
 
+  get sentAt(): Date {
+    return new Date(this._msg.sentAt)
+  }
+
   get text(): string {
     if (typeof this._msg.content === 'object') {
       return `[DEBUG] \n ${getMessageStr(this._msg)}`
@@ -114,8 +118,22 @@ export class StackedMessage {
     this.messages.push(message)
   }
 
+  insertAt(message: Ref<MessageWarp>, index: number) {
+    this.messages.splice(index, 0, message)
+  }
+
   public get sender(): User {
+    if (this.messages.length === 0) {
+      throw new Error('cannot get sender from empty message stack')
+    }
     return User.fromId(+this.messages[0].value.senderId)
+  }
+
+  public get range(): [Date, Date] {
+    return [
+      this.messages.at(0).value.sentAt,
+      this.messages.at(-1).value.sentAt
+    ]
   }
 }
 

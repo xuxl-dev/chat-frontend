@@ -30,8 +30,6 @@ const useChatStore = defineStore('chatStore', () => {
   const me = ref<User | null>(null)
 
   return {
-    getChatSession,
-    updateConversation,
     me,
     server,
     bkm
@@ -67,7 +65,10 @@ export function getChatSession(id: number) {
 }
 
 export class ChatSession extends EventEmitter {
-  bindingGroup: number
+  /**
+   * the receiver id
+   */
+  readonly bindingGroup: number
   private conversation: Conversation
 
   constructor(bindingGroup: number) {
@@ -83,6 +84,8 @@ export class ChatSession extends EventEmitter {
    * this will not trigger update when new message comes
    */
   private chat = shallowReactive<Map<string, Ref<MessageWarp>>>(new Map())
+  mostEarlyMsgId: Ref<string | null> = ref(null)
+  mostLateMsgId: Ref<string | null> = ref(null)
   isLoading = ref(false)
 
   processors: ProcessorLayer[] = [
@@ -97,6 +100,11 @@ export class ChatSession extends EventEmitter {
     }
   }
 
+  /**
+   * new incoming message
+   * @param msg 
+   * @returns 
+   */
   async notify(msg: Message | Readonly<Message>) {
     try {
       await this.processors[0].process(msg)
@@ -170,10 +178,11 @@ export class ChatSession extends EventEmitter {
     Db.instance().getMessageBetween(
       this.bindingGroup,
       useChatStore().me?.id ?? -1,
-      null,
-      new Date(),
+      // from a very early date
+      new Date(0),
+      this.getMsgRef(this.mostEarlyMsgId.value ?? '')?.value._msg.sentAt ?? new Date(), //TODO test this
       100,
-      this.chat.size // find a
+      0 // find a
     ).then((msgs) => {
       console.log('loadMore', msgs)
       msgs.forEach((msg) => {

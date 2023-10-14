@@ -38,7 +38,7 @@ export class LocalMessage implements ILocalMessage {
     this.senderId = message.senderId
     this.receiverId = message.receiverId
     this.content = message.content
-    this.sentAt = message.sentAt
+    this.sentAt = typeof message.sentAt === 'string' ? new Date(message.sentAt) : message.sentAt
     this.hasReadCount = message.hasReadCount
     this.flag = message.flag
   }
@@ -99,7 +99,7 @@ export class Db extends Dexie {
     return await this.chat.toArray()
   }
 
-  public async getMessageBetween(
+  public async getMessageFromTo(
     senderId: number,
     receiverId: number,
     from: Date | null,
@@ -107,19 +107,6 @@ export class Db extends Dexie {
     limit: number = 100,
     offset: number = 0
   ) {
-    console.log('getMessageBetween', senderId, receiverId, from, to, limit, offset)
-    if (from === null) {
-      return await this.chat
-        .where({ senderId, receiverId })
-        .and((message: ILocalMessage) => {
-          return message.sentAt <= to
-        })
-        .reverse()
-        .offset(offset)
-        .limit(limit)
-        .sortBy('date')
-    }
-
     return await this.chat
       .where({ senderId, receiverId })
       .and((message: ILocalMessage) => {
@@ -131,6 +118,27 @@ export class Db extends Dexie {
       .sortBy('date')
   }
 
+  public async getMessageBetween(
+    senderId: number,
+    receiverId: number,
+    from: Date,
+    to: Date,
+    limit: number = 100,
+    offset: number = 0
+  ) {
+    console.log('getMessageBetween', senderId, receiverId, from, to, limit, offset)
+    return await this.chat
+      .where('[senderId+receiverId]')
+      .equals([senderId, receiverId])
+      .or('[senderId+receiverId]')
+      .equals([receiverId, senderId])
+      .filter((message) => message.sentAt >= from && message.sentAt <= to)
+      .reverse()
+      .offset(offset)
+      .limit(limit)
+      .sortBy('date');
+  }
+
   public async getMessageFrom(
     senderId: number,
     from: Date | null,
@@ -138,17 +146,6 @@ export class Db extends Dexie {
     limit: number = 100,
     offset: number = 0
   ) {
-    if (from === null) {
-      return await this.chat
-        .where({ senderId })
-        .and((message: ILocalMessage) => {
-          return message.sentAt <= to
-        })
-        .reverse()
-        .offset(offset)
-        .limit(limit)
-        .sortBy('date')
-    }
     return await this.chat
       .where({ senderId })
       .and((message: ILocalMessage) => {
@@ -203,7 +200,7 @@ export class Db extends Dexie {
   }
 
   public async upsertMessage(message: ILocalMessage) {
-    console.log('upsertMessage', message)
+    // console.log('upsertMessage', message)
     return await this.chat.put(message)
   }
 
