@@ -39,37 +39,6 @@ function runChunked(task: Function, data: any[], chunkSize: number) {
 
 <style scoped lang="scss">
 .scroller {
-  max-height: 75vh;
-  padding-right: 2px;
-  overflow: auto;
-  position: relative;
-  overflow-y: scroll;
-  overflow-x: hidden;
-  background-color: rgba(215, 215, 215, 0);
-  background-clip: text;
-  transition: all .3s ease-in-out;
-}
-
-.scroller:hover {
-  background-color: rgba(147, 147, 147, 1);
-}
-
-.scroller::-webkit-scrollbar-thumb {
-  background-color: inherit;
-}
-
-.scroller::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-
-.scroller::-webkit-scrollbar-thumb {
-  border-radius: 5px;
-}
-
-.scroller:hover::-webkit-scrollbar {
-  opacity: 0.1;
+  max-height: 40vh;
 }
 </style>
-
-<style></style>
