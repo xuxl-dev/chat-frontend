@@ -1,24 +1,28 @@
 <template>
-  <div class="chat-message flex items-end pb-4 pt-5 h-full ">
-
-    <div class="message-body break-all ml-2 mr-2 whitespace-pre-wrap text-xl">
-      sentBy?.name:{{ sentBy?.name  }}
-      message.senderName: {{ message.senderName }}
-      {{ message.text }}
-      
-
-      <div class="flex flex-row items-center float-right">
+  <div class="chat-message flex items-end h-full" ref="msgRef" :msgid="message.value.id" :class="{
+    'flex-row-reverse': !isSelfMessage,
+  }">
+    <div class="message-body break-words ml-2 mr-2 whitespace-pre-wrap text-xl" :class="{
+      'message-bubble': !isSelfMessage,
+      'my-message-bubble': isSelfMessage,
+      'no-tail': displayStyle !== 'tail',
+      'left-tailed': displayStyle === 'tail' && !isSelfMessage,
+      'right-tailed': displayStyle === 'tail' && isSelfMessage,
+    }">
+      {{ message.value.text }}
+      <div class="flex float-right">
         <div class="receipt" :class="{
           collapse: !isSelfMessage,
-          sent: receipt === 'sent',
-          read: receipt === 'read',
+          sent: receipt === 'DELIVERED',
+          read: receipt === 'READ',
         }">
-          <Checked v-if="receipt === 'sent'" />
-          <DoubleChecked v-else-if="receipt === 'read'" />
+          <CircleChecked v-if="receipt === 'SENT'" />
+          <Checked v-else-if="receipt === 'DELIVERED'" />
+          <DoubleChecked v-else />
         </div>
 
-        <div class="read-count" v-if="message.group">
-          {{ message.readCount }}
+        <div class="read-count flex items-end" v-if="message.value.group || showReadCount && isSelfMessage">
+          <span class="text-sm">{{ message.value.readCount }}</span>
         </div>
       </div>
     </div>
@@ -26,15 +30,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { Message, User } from './ChatMessage';
+import { ref, computed, type Ref } from 'vue';
+import { MessageWarp, User } from './ChatMessage';
 import Checked from './icons/Checked.vue';
 import DoubleChecked from './icons/DoubleChecked.vue';
+import CircleChecked from './icons/CircleChecked.vue';
+import useChatStore from '@/store/modules/chatStore';
 
+const store = useChatStore()
+const msgRef = ref<HTMLElement | null>(null)
 
 const props = defineProps({
   message: {
-    type: Message,
+    type: Object as () => Ref<MessageWarp>,
     required: true,
   },
   sentBy: {
@@ -42,14 +50,14 @@ const props = defineProps({
     required: false,
   },
   displayStyle: {
-    type: String,
+    type: String, // normal, tail
     required: false,
     default: 'normal',
   },
   showReadCount: {
     type: Boolean,
     required: false,
-    default: false,
+    default: true,
   },
   showReceipt: {
     type: Boolean,
@@ -57,11 +65,20 @@ const props = defineProps({
     default: true,
   }
 });
+
 const msg = ref(props.message);
-const isSelfMessage = computed(() => props.sentBy?.name === msg.value.senderName);
+const isSelfMessage = computed(() => props.message.value.sender.id === store.me?.id);
 const receipt = computed(() => {
-  return props.message.read ? 'read' : 'sent';
+  return props.message.value.status;
 });
+
+defineExpose({
+  msgRef,
+  msg,
+  isSelfMessage,
+  receipt,
+});
+
 </script>
 <style scoped lang="scss">
 .collapsed {
@@ -94,27 +111,14 @@ const receipt = computed(() => {
   }
 }
 
-$receipt-color: #72eda7;
-$read-color: #4caf50;
-$font-size: 24px;
-
 .receipt {
-
-  &.sent,
-  &.read {
-    color: $receipt-color;
-    font-size: $font-size;
-  }
-
-  &.read {
-    color: $read-color;
-  }
+  color: #72eda7;
+  font-size: 24px;
 }
 
 
 .read-count {
   font-size: 12px;
-  color: #888;
 }
 
 // 带尾巴的消息框样式
@@ -124,7 +128,9 @@ $font-size: 24px;
   border-radius: 10px;
   position: relative;
   color: black;
+}
 
+.left-tailed {
   &::before {
     content: "";
     position: absolute;
@@ -139,11 +145,27 @@ $font-size: 24px;
   }
 }
 
+.right-tailed {
+  &::before {
+    content: "";
+    position: absolute;
+    right: -10px;
+    bottom: 0px;
+    width: 0;
+    height: 0;
+    border-top: 10px solid transparent;
+    border-bottom: 10px solid transparent;
+    border-left: 10px solid #007bff;
+    transform: translateY(-50%);
+  }
+}
+
 // 没有尾巴的消息框样式
-.message-bubble-no-tail {
+.no-tail {
   color: black;
   padding: 10px;
   border-radius: 10px;
+  margin-bottom: 3px;
 
   &.normal {
     background-color: #e0e0e0;
@@ -163,17 +185,6 @@ $font-size: 24px;
   color: #fff;
   position: relative;
 
-  &::before {
-    content: "";
-    position: absolute;
-    right: -10px;
-    bottom: 0px;
-    width: 0;
-    height: 0;
-    border-top: 10px solid transparent;
-    border-bottom: 10px solid transparent;
-    border-left: 10px solid #007bff;
-    transform: translateY(-50%);
-  }
+
 }
 </style>

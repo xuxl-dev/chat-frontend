@@ -1,5 +1,6 @@
 import { LoremIpsum } from "lorem-ipsum";
-import { Message } from "./ChatMessage";
+import { MessageWarp } from "./ChatMessage";
+import { Message } from "./helpers/messageHelper";
 
 const lorem = new LoremIpsum({
   sentencesPerParagraph: {
@@ -17,18 +18,19 @@ function randBetween(min: number, max: number): number {
 }
 
 
-export function randChat(count: number): Message[] {
-  const messages: Message[] = [];
+export function randChat(count: number): MessageWarp[] {
+  const messages: MessageWarp[] = [];
   for (let i = 0; i < count; i++) {
-    messages.push(new Message(
-      i,
-      `Sender${randBetween(0, 1) === 0 ? "A" : "B"}`,
-      "",
-      lorem.generateSentences(randBetween(1, 10)),
-      randBetween(0, 3) === 1,
-      randBetween(0, 4) === 1,
-      randBetween(0, 100)
-    ));
+    const msg = new Message({
+      msgId: i.toString(),
+      senderId: randBetween(1, 2),
+      receiverId: randBetween(1, 2),
+      content: lorem.generateSentences(randBetween(1, 3)),
+      hasReadCount: randBetween(0, 2),
+      flag: 4
+    })
+    
+    messages.push(MessageWarp.fromMessage(msg));
   }
   return messages;
 }

@@ -1,48 +1,46 @@
 <template>
-  <VirtualList dataPropName="stackedMessage"
-               :data="messageGroups"
-               :data-key="getKey"
-               :item="MessageStack"
-               :size="20"
-               class="scroll-smooth"
-               ref="virtualListRef"
-               id="vli" />
+  <div>
+    <VirtualList :data="source" :data-key="getKey" :item="MessageStack" :size="20" class="scroll-smooth"
+      ref="virtualListRef" />
+  </div>
 </template>
 <script setup lang="ts">
-import { ref, onMounted, defineProps } from 'vue'
-import { Message, StackedMessage, mergeAdjacentMessages } from './ChatMessage';
+import { ref, watch, type Ref, reactive } from 'vue';
+import { MessageWarp, StackedMessage } from './ChatMessage';
 import VirtualList from './VirtualList/index.tsx';
 import MessageStack from './MessageStack.vue';
-import useChatStore from '@/store/modules/chatStore';
-const getKey = (item: StackedMessage) => item.stack_id
-const { onMessagesUpdated } = useChatStore()
+import { getChatSession } from '../../store/modules/chatStore';
 
-const messageGroups = ref<StackedMessage[]>([]);
-const virtualListRef = ref<any | null>(null)
 
-onMessagesUpdated((msg) => {
-  append(msg)
+const props = defineProps({
+  channel: {
+    type: Number,
+    required: true
+  }
 })
 
-const append = (message: Message) => {
-  if (!lastStack()) {
-    messageGroups.value.push(new StackedMessage([message]))
-    return
-  } else {
-    const last = lastStack()!
-    if (last.sender === message.senderName) {
-      last.messages.push(message)
-    } else {
-      messageGroups.value.push(new StackedMessage([message]))
+const getKey = (item: StackedMessage) => item.stack_id
+const source = ref<StackedMessage[]>([])
+
+const virtualListRef = ref<any | null>(null)
+
+// on prop channel change
+watch(() => props.channel, (newVal, oldVal) => {
+  getChatSession(newVal).on('new-message', (warp: Ref<MessageWarp>) => {
+    const lst = lastStack()
+    if (lst && lst.sender.id === warp.value.sender.id) {
+      lst.append(warp)
+      return
     }
-  }
+    source.value.push(reactive(new StackedMessage([warp])))
+  })
 
-  // document.getElementById('vli')?.scrollTo(0, 999999)
-
-}
+  oldVal && getChatSession(oldVal).off('new-message')
+}, { immediate: true })
 
 const lastStack = () => {
-  return messageGroups.value.at(-1)
+  // return source.value.at(-1)
+  return source.value.at(-1)
 }
 
 const scrollToBottom = () => {
@@ -50,13 +48,8 @@ const scrollToBottom = () => {
 }
 
 defineExpose({
-  append,
-  lastStack,
-  messageGroups,
-  getKey,
-  virtualListRef,
   scrollToBottom
 })
 
 </script>
-<style lang="scss"></style>
+<style lang="scss" scoped></style>
