@@ -11,7 +11,8 @@ export class ACKUpdateLayer extends ProcessorBase {
 
   process: (msg: Message) => Promise<Message> = async (msg: Message) => {
     if (isFlagSet(MessageFlag.ACK, msg) && typeof msg.content !== 'string') {
-      const ref = getChatSession(msg.senderId).getMsgRef(msg.content.ackMsgId)
+      const ref = getChatSession(msg.senderId)?.getMsgRef(msg.content.ackMsgId)
+      if (!ref) return this.next(msg)
       ref.value.updateAck(msg.content.type)
       throw new ProcessEndException()
     }

@@ -45,6 +45,8 @@ export function debouncedRef<T>(value: T, delay = 500): Ref<T> {
   }));
 }
 
+const debounceMap = new Map<string, (id: string, ...args: any[]) => void>();
+
 export function advancedDebounce<T extends (...args: any[]) => void>(
   func: T,
   delay: number,
@@ -53,13 +55,11 @@ export function advancedDebounce<T extends (...args: any[]) => void>(
   let timerId: ReturnType<typeof setTimeout> | null;
   let lastInvokeTime = 0;
   let lastArgs: Parameters<T> | null;
-  let lastId: string | null;
 
   const invokeFunction = () => {
-    if (lastArgs && lastId) {
+    if (lastArgs) {
       func(...lastArgs);
       lastArgs = null;
-      lastId = null;
       lastInvokeTime = Date.now();
     }
   };
@@ -71,28 +71,32 @@ export function advancedDebounce<T extends (...args: any[]) => void>(
     }
   };
 
-  return (id: string, ...args: Parameters<T>) => {
+  const debounced = (id: string, ...args: Parameters<T>) => {
     if (!lastInvokeTime) {
       lastInvokeTime = Date.now();
     }
 
-    if (lastId !== id) {
-      // Different ID, cancel the previous timer and set the new ID and arguments
-      cancel();
+    if (lastArgs) {
       lastArgs = args;
-      lastId = id;
-      lastInvokeTime = Date.now();
+      return;
+    }
 
-      // If there is a maximum wait time and it has passed, invoke the function immediately
-      if (maxWait && lastInvokeTime - lastInvokeTime >= maxWait) {
+    lastArgs = args;
+
+    if (!debounceMap.has(id)) {
+      debounceMap.set(id, debounced as (id: string, ...args: any[]) => void);
+    }
+
+    if (debounceMap.get(id) === debounced) {
+      if (maxWait && Date.now() - lastInvokeTime >= maxWait) {
         invokeFunction();
       } else {
-        // Otherwise, set a timer to invoke the function after the specified delay
+        cancel();
         timerId = setTimeout(invokeFunction, delay);
       }
-    } else {
-      // Same ID, just update the arguments
-      lastArgs = args;
     }
   };
+
+  return debounced;
 }
+

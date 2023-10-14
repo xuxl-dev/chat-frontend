@@ -5,7 +5,7 @@ import {
   Message
 } from '@/components/ChatList/helpers/messageHelper'
 import { defineStore } from 'pinia'
-import { reactive, ref, shallowReactive, type Ref, triggerRef, watch } from 'vue'
+import { ref, shallowReactive, type Ref } from 'vue'
 import {
   BeginProcessorLayer,
   EndProcessorLayer,
@@ -15,7 +15,6 @@ import {
 import { ACKUpdateLayer } from './ChatProcessors/ACKUpdateLayer'
 import EventEmitter from 'eventemitter3'
 import { Db, LocalMessage } from '@/utils/db'
-import { retry } from '@/utils/utils'
 import { advancedDebounce } from '@/utils/debounce'
 
 const useChatStore = defineStore('chatStore', () => {
