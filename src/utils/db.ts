@@ -64,15 +64,14 @@ export class Db extends Dexie {
       /**
        * ++id: 自增主键
        * &msgId: 唯一索引
-       * senderId: 普通索引
-       * receiverId: 普通索引
+       * senderId,receiverId: 联合索引
        * content: 普通索引
        * sentAt: 普通索引
        * hasReadCount: 普通索引
        * flag: 普通索引
        */
       chats:
-        '&msgId, senderId, receiverId, content, sentAt, hasReadCount, flag',
+        '&msgId, [senderId+receiverId], content, sentAt, hasReadCount, flag',
       usermetas: '&uid, name, avatar',
       resources: '&md5, &url, type, size, name, lastModified, blob'
     })
@@ -103,11 +102,24 @@ export class Db extends Dexie {
   public async getMessageBetween(
     senderId: number,
     receiverId: number,
-    from: Date,
+    from: Date | null,
     to: Date,
     limit: number = 100,
     offset: number = 0
   ) {
+    console.log('getMessageBetween', senderId, receiverId, from, to, limit, offset)
+    if (from === null) {
+      return await this.chat
+        .where({ senderId, receiverId })
+        .and((message: ILocalMessage) => {
+          return message.sentAt <= to
+        })
+        .reverse()
+        .offset(offset)
+        .limit(limit)
+        .sortBy('date')
+    }
+
     return await this.chat
       .where({ senderId, receiverId })
       .and((message: ILocalMessage) => {
@@ -121,11 +133,22 @@ export class Db extends Dexie {
 
   public async getMessageFrom(
     senderId: number,
-    from: Date,
+    from: Date | null,
     to: Date,
     limit: number = 100,
     offset: number = 0
   ) {
+    if (from === null) {
+      return await this.chat
+        .where({ senderId })
+        .and((message: ILocalMessage) => {
+          return message.sentAt <= to
+        })
+        .reverse()
+        .offset(offset)
+        .limit(limit)
+        .sortBy('date')
+    }
     return await this.chat
       .where({ senderId })
       .and((message: ILocalMessage) => {

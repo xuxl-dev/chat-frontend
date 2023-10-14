@@ -1,6 +1,7 @@
 import type { Ref } from 'vue'
-import { ACKMsgType, getMessageStr, MessageFlag, type Message } from './helpers/messageHelper'
+import { ACKMsgType, getMessageStr, MessageFlag, Message } from './helpers/messageHelper'
 import useChatStore, { debounceSyncMsg, getChatSession } from '@/store/modules/chatStore'
+import type { ILocalMessage } from '@/utils/db'
 
 export class MessageWarp {
   static _id = 0
@@ -15,6 +16,12 @@ export class MessageWarp {
   static fromMessage(message: Message): MessageWarp {
     const warp = new MessageWarp()
     warp._msg = message
+    return warp
+  }
+
+  static fromDbMessage(message: ILocalMessage): MessageWarp {
+    const warp = new MessageWarp()
+    warp._msg = new Message(message)
     return warp
   }
 

@@ -75,19 +75,15 @@ export class ChatSession extends EventEmitter {
     this.bindingGroup = bindingGroup
     this.conversation = useChatStore().bkm.getConversation(bindingGroup)
     this.setNexts()
-
-    // watch(()=> this.chat, (newVal, oldVal) => {
-    //   console.log('chat changed', newVal, oldVal)
-    // })
   }
 
-  // chat = ref<MessageWarp[]>([])
   /**
    * Do not use this directly, use `getChatSession(id).chat.get(id)` instead
    *
    * this will not trigger update when new message comes
    */
   private chat = shallowReactive<Map<string, Ref<MessageWarp>>>(new Map())
+  isLoading = ref(false)
 
   processors: ProcessorLayer[] = [
     BeginProcessorLayer.instance,
@@ -165,6 +161,29 @@ export class ChatSession extends EventEmitter {
 
   async sendRaw(msg: Message) {
     return this.conversation.send(msg)
+  }
+
+  loadMore() {
+    console.log('loading more')
+    this.isLoading.value = true
+
+    Db.instance().getMessageBetween(
+      this.bindingGroup,
+      useChatStore().me?.id ?? -1,
+      null,
+      new Date(),
+      100,
+      this.chat.size // find a
+    ).then((msgs) => {
+      console.log('loadMore', msgs)
+      msgs.forEach((msg) => {
+        this.setMsg(MessageWarp.fromDbMessage(msg))
+      })
+    })
+
+    setTimeout(() => {
+      this.isLoading.value = false
+    }, 1000);
   }
 
   /**

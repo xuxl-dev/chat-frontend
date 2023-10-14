@@ -1,10 +1,10 @@
 <template>
   <div class="chat-msg-list " @contextmenu.prevent>
-    <el-icon v-if="false" :size="14" class="loading">
+    <el-icon v-if="isLoading" :size="14" class="loading">
       消息加载中
     </el-icon>
     <VirtualList :data="source" :data-key="getKey" :item="MessageStack" :size="8" class="virtual-list container"
-      ref="virtualListRef" @totop="onTopHit()" @tobottom="onBottomHit()" @scroll="onScroll" />
+      ref="virtualListRef" @totop="onTopHit()" @tobottom="onBottomHit()"/>
   </div>
 </template>
 <script setup lang="ts">
@@ -12,8 +12,8 @@ import { ref, watch, type Ref, reactive, onMounted } from 'vue';
 import { MessageWarp, StackedMessage } from './ChatMessage';
 import VirtualList from './VirtualList/index.tsx';
 import MessageStack from './MessageStack.vue';
-import { getChatSession } from '../../store/modules/chatStore';
-
+import { getChatSession, ChatSession } from '../../store/modules/chatStore';
+import useChatStore from '../../store/modules/chatStore';
 
 const props = defineProps({
   channel: {
@@ -26,14 +26,39 @@ const getKey = (item: StackedMessage) => item.stack_id
 const source = ref<StackedMessage[]>([])
 
 const virtualListRef = ref<any | null>(null)
-
+let isLoading = ref(false)
+let currentSession: ChatSession | null = null
 onMounted(() => {
 
 })
 
+let chatRange = ref({
+  start: 0,
+  end: 0
+}) //maintain a range of messages to display
+
+const insertMessage = (msg: MessageWarp) => {
+  // determine the location to insert the message by sentAt
+
+  // if there is a avaliable stack, insert to the stack
+
+  // else create a new stack and insert to that position
+}
+
 // on prop channel change
 watch(() => props.channel, (newVal, oldVal) => {
-  getChatSession(newVal).on('new-message', (warp: Ref<MessageWarp>) => {
+  currentSession = getChatSession(newVal)
+  isLoading = currentSession.isLoading
+  currentSession.on('new-message', (warp: Ref<MessageWarp>) => {
+    //TODO: make this order by time
+    // if message is history, add to the front (determined by sentAt)
+    // if message is new, add to the back
+
+    if (warp.value._msg.sentAt < source.value[0].messages[0].value._msg.sentAt) {
+      source.value.unshift(reactive(new StackedMessage([warp])))
+      return
+    }
+
     const lst = lastStack()
     if (lst && lst.sender.id === warp.value.sender.id) {
       lst.append(warp)
@@ -55,15 +80,11 @@ const scrollToBottom = () => {
 }
 
 const onTopHit = () => {
-  // console.log('top hit')
+  currentSession?.loadMore()
 }
 
 const onBottomHit = () => {
-  // console.log('bottom hit')
-}
-
-const onScroll = () => {
-  // console.log('scroll')
+  console.log('bottom hit')
 }
 
 defineExpose({
@@ -169,5 +190,4 @@ defineExpose({
     }
   }
 }
-
 </style>
