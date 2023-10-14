@@ -72,18 +72,6 @@ defineExpose({
 
 </script>
 <style lang="scss" scoped>
-.scroller {
-  max-height: 75vh;
-  padding-right: 2px;
-  overflow: auto;
-  position: relative;
-  overflow-y: scroll;
-  overflow-x: hidden;
-  background-color: rgba(215, 215, 215, 0);
-  background-clip: text;
-  transition: all .3s ease-in-out;
-}
-
 .chat-msg-list {
   position: relative;
   display: flex;
@@ -147,50 +135,39 @@ defineExpose({
   padding-right: 20px;
   padding-left: 20px;
   overflow-y: auto;
-  transition: all 1s;
-}
-
-.container::-webkit-scrollbar-thumb {
-  // background-color: rgba(255, 0, 0, 1.0);
-  border-radius: 5px;
-  transition: all 1s;
-}
-
-.container:hover::-webkit-scrollbar-thumb {
-  background-color: rgba(89, 89, 89, 0.851);
-}
-
-.container::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(31, 31, 31, 0.851);
+  transition: all 200ms;
 }
 
 .container {
-  overflow-y: scroll;
   overflow-x: hidden;
+  overflow-y: auto;
   background-color: rgba(0, 0, 0, 0);
   background-clip: text;
   -webkit-background-clip: text;
-  transition: background-color .8s;
+
+  &::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+    border-radius: 5px;
+    background-color: inherit;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    border-radius: 5px;
+    background-color: inherit;
+
+    &:hover {
+      background-color: rgba(31, 31, 31, 0.455);
+    }
+  }
+
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.18);
+
+    &::-webkit-scrollbar {
+      width: 10px;
+    }
+  }
 }
 
-.container:hover {
-  background-color: rgba(0, 0, 0, 0.18);
-}
-
-.container::-webkit-scrollbar-thumb {
-  background-color: inherit;
-}
-
-.container::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-  border-radius: 5px;
-  transition: width 1s;
-}
-
-.container:hover::-webkit-scrollbar {
-  width: 10px;
-  background-color: rgba(92, 92, 92, 0.1);
-  opacity: 0.1;
-}
 </style>
