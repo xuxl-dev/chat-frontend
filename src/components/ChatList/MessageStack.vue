@@ -9,7 +9,6 @@
               class="sticky bottom-0 avatar z-50" />
 
     <div class="flex flex-col">
-      {{ source.messages.length }}
       <!-- {{ stackedMessage.sender }} {{ sender }} -->
       <TransitionGroup name="list"
                        tag="div">
@@ -29,24 +28,11 @@
   </div>
 </template>
 <script setup lang="ts">
-import { type Ref, onMounted, computed } from 'vue'
+import { type Ref, computed } from 'vue'
 import { MessageWarp, StackedMessage, User } from './ChatMessage';
 import MessageItem from './MessageItem.vue';
-import useChatStore, { type ChatSession } from '@/store/modules/chatStore';
+import useChatStore from '@/store/modules/chatStore';
 import { ACKMsgType } from './helpers/messageHelper';
-
-const store = useChatStore()
-const isSelfMessage = computed(() => props.source.sender.id === store.me?.id)
-const setObserableStateOf = (message: Ref<MessageWarp>) => {
-  return (state: boolean) => {
-    if (state && (message.value._msg.senderId !== store.me?.id)) { //Do not ack self message
-      message.value.ack(ACKMsgType.READ)
-    }
-  }
-}
-
-onMounted(() => {
-})
 
 const props = defineProps({
   source: {
@@ -55,9 +41,16 @@ const props = defineProps({
   }
 });
 
-const emits = defineEmits({
-  'append-message': (message: MessageWarp) => true,
-});
+const store = useChatStore()
+const isSelfMessage = computed(() => props.source.sender.id === store.me?.id)
+
+const setObserableStateOf = (message: Ref<MessageWarp>) => {
+  return (state: boolean) => {
+    if (state && (message.value._msg.senderId !== store.me?.id)) { //Do not ack self message
+      message.value.ack(ACKMsgType.READ)
+    }
+  }
+}
 
 </script>
 <style lang="scss" scoped>

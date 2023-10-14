@@ -1,27 +1,27 @@
-import {
-  MessageWarp,
-  User
-} from '@/components/ChatList/ChatMessage'
+import { MessageWarp, User } from '@/components/ChatList/ChatMessage'
 import {
   BakaMessager,
   Conversation,
   Message
 } from '@/components/ChatList/helpers/messageHelper'
 import { defineStore } from 'pinia'
-import { reactive, ref, shallowReactive, type Ref, triggerRef } from 'vue'
+import { reactive, ref, shallowReactive, type Ref, triggerRef, watch } from 'vue'
 import {
   BeginProcessorLayer,
   EndProcessorLayer,
   ProcessEndException,
-  type ProcessorLayer,
+  type ProcessorLayer
 } from './ChatProcessors/base'
 import { ACKUpdateLayer } from './ChatProcessors/ACKUpdateLayer'
 import EventEmitter from 'eventemitter3'
+import { Db, LocalMessage } from '@/utils/db'
+import { retry } from '@/utils/utils'
+import { advancedDebounce } from '@/utils/debounce'
 
 const useChatStore = defineStore('chatStore', () => {
   const server = ref('http://localhost:3001')
   const token = ref(
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJhZG1pbiIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTY5NzAxMTUxNiwiZXhwIjoxNjk3MTg0MzE2fQ.LueA_q2F3bGc8vvUG2WSQ69fEypMyL4fkeO9aPyDyRQ'
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwidXNlcm5hbWUiOiJ1c2VyIiwicm9sZSI6InVzZXIiLCJpYXQiOjE2OTcwMzYwMDgsImV4cCI6MTY5OTYyODAwOH0.HVSRijOgxKTESZaTNeBYiLxC-CMqqrCHeMSe6uCjDuY'
   )
   const bkm = new BakaMessager({
     server: server.value,
@@ -42,7 +42,6 @@ const useChatStore = defineStore('chatStore', () => {
 const sesses: Map<number, ChatSession> = new Map()
 
 export async function updateConversation(raw: Message) {
-  console.log('updateConversation', raw)
   if (sesses.has(raw.senderId)) {
     sesses.get(raw.senderId).notify(raw)
   } else {
@@ -50,6 +49,16 @@ export async function updateConversation(raw: Message) {
     sesses.set(raw.senderId, conversation)
   }
 }
+
+const SyncMsg = async (msg: Message) => {
+  try {
+    return await Db.instance().upsertMessage(new LocalMessage(msg))
+  } catch (e) {
+    console.error(e)
+  }
+}
+
+export const debounceSyncMsg = advancedDebounce(SyncMsg, 500, 1000)
 
 export function getChatSession(id: number) {
   if (!sesses.has(id)) {
@@ -67,12 +76,16 @@ export class ChatSession extends EventEmitter {
     this.bindingGroup = bindingGroup
     this.conversation = useChatStore().bkm.getConversation(bindingGroup)
     this.setNexts()
+
+    // watch(()=> this.chat, (newVal, oldVal) => {
+    //   console.log('chat changed', newVal, oldVal)
+    // })
   }
 
   // chat = ref<MessageWarp[]>([])
   /**
    * Do not use this directly, use `getChatSession(id).chat.get(id)` instead
-   * 
+   *
    * this will not trigger update when new message comes
    */
   private chat = shallowReactive<Map<string, Ref<MessageWarp>>>(new Map())
@@ -110,6 +123,7 @@ export class ChatSession extends EventEmitter {
       console.log(messageWarp, `messageWarp.id is not set`)
       return
     }
+
     console.log('setMsg', messageWarp)
 
     if (this.chat.has(messageWarp.id)) {
@@ -122,6 +136,10 @@ export class ChatSession extends EventEmitter {
     const msgRef = ref(messageWarp)
     this.emit('new-message', msgRef)
     this.chat.set(messageWarp.id, msgRef)
+
+    // the message here are these which owns a bubble, both sent and received
+    // SyncMsg(messageWarp._msg)
+    debounceSyncMsg(messageWarp._msg.msgId, messageWarp._msg)
   }
 
   getMsgRef(id: string) {
@@ -136,19 +154,21 @@ export class ChatSession extends EventEmitter {
     return msg
   }
 
-  async sendRawQuick(content:object, flag: number) {
-    return this.conversation.send(new Message({
-      content,
-      flag,
-      receiverId: this.bindingGroup
-    }))
+  async sendRawQuick(content: object, flag: number) {
+    return this.conversation.send(
+      new Message({
+        content,
+        flag,
+        receiverId: this.bindingGroup
+      })
+    )
   }
 
   async sendRaw(msg: Message) {
     return this.conversation.send(msg)
   }
 
-  /** 
+  /**
    * @deprecated
    * Do not use this in production
    *  */

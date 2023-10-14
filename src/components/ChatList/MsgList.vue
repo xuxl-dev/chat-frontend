@@ -5,8 +5,8 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ref, onMounted, watch, computed, type Ref, shallowRef, reactive } from 'vue';
-import { MessageWarp, StackedMessage, User } from './ChatMessage';
+import { ref, watch, type Ref, reactive } from 'vue';
+import { MessageWarp, StackedMessage } from './ChatMessage';
 import VirtualList from './VirtualList/index.tsx';
 import MessageStack from './MessageStack.vue';
 import { getChatSession } from '../../store/modules/chatStore';
@@ -20,16 +20,10 @@ const props = defineProps({
 })
 
 const getKey = (item: StackedMessage) => item.stack_id
-
-// let source = computed(() => {
-//   return Array.from(getChatSession(props.channel).chat.values()).map(msg => new StackedMessage([msg.value]))
-// })
-const source = ref<Ref<StackedMessage[]>>(ref([]))
+const source = ref<StackedMessage[]>([])
 
 const virtualListRef = ref<any | null>(null)
-onMounted(() => {
 
-})
 // on prop channel change
 watch(() => props.channel, (newVal, oldVal) => {
   getChatSession(newVal).on('new-message', (warp: Ref<MessageWarp>) => {
@@ -38,13 +32,14 @@ watch(() => props.channel, (newVal, oldVal) => {
       lst.append(warp)
       return
     }
-    source.value.push(new StackedMessage([warp]))
+    source.value.push(reactive(new StackedMessage([warp])))
   })
 
   oldVal && getChatSession(oldVal).off('new-message')
 }, { immediate: true })
 
 const lastStack = () => {
+  // return source.value.at(-1)
   return source.value.at(-1)
 }
 
@@ -53,11 +48,8 @@ const scrollToBottom = () => {
 }
 
 defineExpose({
-  lastStack,
-  getKey,
-  virtualListRef,
   scrollToBottom
 })
 
 </script>
-<style lang="scss"></style>
+<style lang="scss" scoped></style>

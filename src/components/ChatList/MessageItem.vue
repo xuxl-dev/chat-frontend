@@ -9,8 +9,6 @@
       'left-tailed': displayStyle === 'tail' && !isSelfMessage,
       'right-tailed': displayStyle === 'tail' && isSelfMessage,
     }">
-      <button @click="console.log(message)">LogMe</button> <br>
-
       {{ message.value.text }}
       <div class="flex float-right">
         <div class="receipt" :class="{
@@ -32,19 +30,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, type Ref } from 'vue';
+import { ref, computed, type Ref } from 'vue';
 import { MessageWarp, User } from './ChatMessage';
 import Checked from './icons/Checked.vue';
 import DoubleChecked from './icons/DoubleChecked.vue';
 import CircleChecked from './icons/CircleChecked.vue';
 import useChatStore from '@/store/modules/chatStore';
 
-const { me, getChatSession } = useChatStore()
+const store = useChatStore()
 const msgRef = ref<HTMLElement | null>(null)
-
-onMounted(() => {
-
-})
 
 const props = defineProps({
   message: {
@@ -73,13 +67,10 @@ const props = defineProps({
 });
 
 const msg = ref(props.message);
-const isSelfMessage = computed(() => props.message.value.sender.id === me?.id);
+const isSelfMessage = computed(() => props.message.value.sender.id === store.me?.id);
 const receipt = computed(() => {
   return props.message.value.status;
 });
-
-
-
 
 defineExpose({
   msgRef,

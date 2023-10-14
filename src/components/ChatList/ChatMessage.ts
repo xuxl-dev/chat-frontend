@@ -1,6 +1,6 @@
 import type { Ref } from 'vue'
 import { ACKMsgType, getMessageStr, MessageFlag, type Message } from './helpers/messageHelper'
-import useChatStore, { getChatSession } from '@/store/modules/chatStore'
+import useChatStore, { debounceSyncMsg, getChatSession } from '@/store/modules/chatStore'
 
 export class MessageWarp {
   static _id = 0
@@ -15,15 +15,8 @@ export class MessageWarp {
   static fromMessage(message: Message): MessageWarp {
     const warp = new MessageWarp()
     warp._msg = message
-    if (message.msgId) {
-      console.log('set', message.msgId, warp)
-    }
-    // these messages sent by me has no msgId,
-    // they are processed when sent is done, server will send back a msgId
-
     return warp
   }
-
 
   get senderId(): number {
     return this._msg.senderId
@@ -72,27 +65,31 @@ export class MessageWarp {
     if (type === ACKMsgType.READ) {
       if (this._msg.hasReadCount > 0) {
         this._msg.hasReadCount += 1
+      } else {
+        this._msg.hasReadCount = 1
       }
-      this._msg.hasReadCount = 1
     } else { // DELIVERED
+      if (this._msg.hasReadCount > 0) {
+        throw new Error('this message has been read, cannot update to DELIVERED')
+      }
       this._msg.hasReadCount = 0
     }
+    debounceSyncMsg(this._msg.msgId, this._msg)
   }
 
   /**
    * send ack to this message
    * @param type 
    */
-  ack(type: ACKMsgType) {
+  ack(type: ACKMsgType = ACKMsgType.READ) {
     getChatSession(this.senderId).sendRawQuick(
       {
         ackMsgId: this.id,
-        type: ACKMsgType.READ
+        type: type
       },
       MessageFlag.ACK
     )
   }
-
 }
 
 
