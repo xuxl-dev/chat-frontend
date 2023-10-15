@@ -1,6 +1,7 @@
 import type { Ref } from 'vue'
-import { ACKMsgType, getMessageStr, MessageFlag, type Message } from './helpers/messageHelper'
+import { ACKMsgType, getMessageStr, MessageFlag, Message } from './helpers/messageHelper'
 import useChatStore, { debounceSyncMsg, getChatSession } from '@/store/modules/chatStore'
+import type { ILocalMessage } from '@/utils/db'
 
 export class MessageWarp {
   static _id = 0
@@ -18,8 +19,18 @@ export class MessageWarp {
     return warp
   }
 
+  static fromDbMessage(message: ILocalMessage): MessageWarp {
+    const warp = new MessageWarp()
+    warp._msg = new Message(message)
+    return warp
+  }
+
   get senderId(): number {
     return this._msg.senderId
+  }
+
+  get sentAt(): Date {
+    return new Date(this._msg.sentAt)
   }
 
   get text(): string {
@@ -107,8 +118,22 @@ export class StackedMessage {
     this.messages.push(message)
   }
 
+  insertAt(message: Ref<MessageWarp>, index: number) {
+    this.messages.splice(index, 0, message)
+  }
+
   public get sender(): User {
+    if (this.messages.length === 0) {
+      throw new Error('cannot get sender from empty message stack')
+    }
     return User.fromId(+this.messages[0].value.senderId)
+  }
+
+  public get range(): [Date, Date] {
+    return [
+      this.messages.at(0).value.sentAt,
+      this.messages.at(-1).value.sentAt
+    ]
   }
 }
 

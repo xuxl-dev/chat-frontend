@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue'
 import ChatList from '@/components/ChatList/index.vue';
 import { Message } from '@/components/ChatList/helpers/messageHelper';
-import useChatStore from '@/store/modules/chatStore';
+import useChatStore, { getChatSession } from '@/store/modules/chatStore';
 import { Db } from '@/utils/db';
 import Dexie from 'dexie';
 
@@ -17,7 +17,7 @@ const msg = ref('Lorem ipsum')
 const send = () => {
   const me = useChatStore().me
   const to = me.id === 1 ? 2 : 1
-  useChatStore().getChatSession(to).send(new Message().from(me.id).text(msg.value))
+  getChatSession(to).send(new Message().from(me.id).text(msg.value))
 }
 
 const switchUser = async () => {
@@ -32,22 +32,26 @@ const showDb = async () => {
 const clearDB = async () => {
   console.log(Dexie.delete('ChatDatabase'))
 }
+const chatListRef = ref<any | null>(null)
+const loadMore = async ()=>{
+  chatListRef.value.loadMore()
+}
 
 </script>
 
 <template>
   <main>
-    <ChatList />
+    <ChatList ref="chatListRef" />
     <div>
       <input type="text"
              v-model="msg" />
       <p>Current user:{{ useChatStore().me?.id }}</p>
       <button @click="send">send</button> <br>
       <button @click="switchUser">switch user</button> <br>
-      <button @click="console.log(useChatStore().getChatSession(useChatStore().me.id === 1 ? 2 : 1).getRawChat())">log chat</button> <br>
+      <button @click="console.log(getChatSession(useChatStore().me.id === 1 ? 2 : 1).getRawChat())">log chat</button> <br>
       <button @click="showDb">Show DB</button> <br>
       <button @click="clearDB">Clear DB</button> <br>
-      
+      <button @click="loadMore">TEST DB</button>
     </div>
   </main>
 </template>

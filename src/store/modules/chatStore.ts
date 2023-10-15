@@ -5,7 +5,7 @@ import {
   Message
 } from '@/components/ChatList/helpers/messageHelper'
 import { defineStore } from 'pinia'
-import { reactive, ref, shallowReactive, type Ref, triggerRef, watch } from 'vue'
+import { ref, shallowReactive, type Ref } from 'vue'
 import {
   BeginProcessorLayer,
   EndProcessorLayer,
@@ -15,7 +15,6 @@ import {
 import { ACKUpdateLayer } from './ChatProcessors/ACKUpdateLayer'
 import EventEmitter from 'eventemitter3'
 import { Db, LocalMessage } from '@/utils/db'
-import { retry } from '@/utils/utils'
 import { advancedDebounce } from '@/utils/debounce'
 
 const useChatStore = defineStore('chatStore', () => {
@@ -31,8 +30,6 @@ const useChatStore = defineStore('chatStore', () => {
   const me = ref<User | null>(null)
 
   return {
-    getChatSession,
-    updateConversation,
     me,
     server,
     bkm
@@ -68,7 +65,10 @@ export function getChatSession(id: number) {
 }
 
 export class ChatSession extends EventEmitter {
-  bindingGroup: number
+  /**
+   * the receiver id
+   */
+  readonly bindingGroup: number
   private conversation: Conversation
 
   constructor(bindingGroup: number) {
@@ -76,19 +76,17 @@ export class ChatSession extends EventEmitter {
     this.bindingGroup = bindingGroup
     this.conversation = useChatStore().bkm.getConversation(bindingGroup)
     this.setNexts()
-
-    // watch(()=> this.chat, (newVal, oldVal) => {
-    //   console.log('chat changed', newVal, oldVal)
-    // })
   }
 
-  // chat = ref<MessageWarp[]>([])
   /**
    * Do not use this directly, use `getChatSession(id).chat.get(id)` instead
    *
    * this will not trigger update when new message comes
    */
   private chat = shallowReactive<Map<string, Ref<MessageWarp>>>(new Map())
+  mostEarlyMsgId: Ref<string | null> = ref(null)
+  mostLateMsgId: Ref<string | null> = ref(null)
+  isLoading = ref(false)
 
   processors: ProcessorLayer[] = [
     BeginProcessorLayer.instance,
@@ -102,6 +100,11 @@ export class ChatSession extends EventEmitter {
     }
   }
 
+  /**
+   * new incoming message
+   * @param msg 
+   * @returns 
+   */
   async notify(msg: Message | Readonly<Message>) {
     try {
       await this.processors[0].process(msg)
@@ -166,6 +169,31 @@ export class ChatSession extends EventEmitter {
 
   async sendRaw(msg: Message) {
     return this.conversation.send(msg)
+  }
+
+  async loadMore2() {
+    console.log('loading more2')
+    this.isLoading.value = true
+
+    const msgs = await Db.instance().getMessageBetween2(
+      this.bindingGroup,
+      useChatStore().me?.id ?? -1,
+      new Date(0), // no lower bound
+      this.getMsgRef(this.mostEarlyMsgId.value ?? '')?.value._msg.sentAt ?? new Date(), //TODO test this
+      5
+    )
+    console.log('loadMore', msgs)
+
+    msgs.forEach((msg) => {
+      this.setMsg(MessageWarp.fromDbMessage(msg))
+    })
+
+
+    setTimeout(() => {
+      this.isLoading.value = false
+    }, 1000);
+
+    return msgs
   }
 
   /**

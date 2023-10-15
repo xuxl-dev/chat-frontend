@@ -9,6 +9,7 @@
       'left-tailed': displayStyle === 'tail' && !isSelfMessage,
       'right-tailed': displayStyle === 'tail' && isSelfMessage,
     }">
+      {{ message.value.id }}
       {{ message.value.text }}
       <div class="flex float-right">
         <div class="receipt" :class="{

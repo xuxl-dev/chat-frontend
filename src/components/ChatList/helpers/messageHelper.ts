@@ -1,7 +1,7 @@
 import { Socket, io } from 'socket.io-client'
 import { CryptoHelper } from './cipher'
 import EventEmitter from 'eventemitter3'
-import useChatStore from '@/store/modules/chatStore'
+import useChatStore, { updateConversation } from '@/store/modules/chatStore'
 import { randBetween } from '@/utils/utils'
 
 export class CreateMessageDto {
@@ -74,7 +74,7 @@ export class Message implements IMessage {
       this.senderId = config.senderId
       this.receiverId = config.receiverId
       this.content = config.content
-      this.sentAt = config.sentAt
+      this.sentAt = typeof config.sentAt === 'string' ? new Date(config.sentAt) : config.sentAt
       this.hasReadCount = config.hasReadCount
       this.flag = config.flag
     }
@@ -327,7 +327,7 @@ export class Conversation extends EventEmitter {
   private receive_pipeline: MessageHandler[] = []
   private send_pipeline: MessageHandler[] = []
   private ctx: ConversationCtx
-  private notifyNewMessage = useChatStore().updateConversation
+
   constructor(group: number, messageHelper: IMessageHelper) {
     super()
     this.group = group
@@ -369,7 +369,7 @@ export class Conversation extends EventEmitter {
         await this.receiverFallback(message)
       }
     }
-    await this.notifyNewMessage(message) //TODO: this is for test only, delete this
+    await updateConversation(message) //TODO: this is for test only, delete this
   }
 
   /**
