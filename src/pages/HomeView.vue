@@ -32,18 +32,16 @@ const showDb = async () => {
 const clearDB = async () => {
   console.log(Dexie.delete('ChatDatabase'))
 }
-
-const loadMore2 = async ()=>{
-  const me = useChatStore().me
-  const to = me.id === 1 ? 2 : 1
-  getChatSession(to).loadMore2()
+const chatListRef = ref<any | null>(null)
+const loadMore = async ()=>{
+  chatListRef.value.loadMore()
 }
 
 </script>
 
 <template>
   <main>
-    <ChatList />
+    <ChatList ref="chatListRef" />
     <div>
       <input type="text"
              v-model="msg" />
@@ -53,7 +51,7 @@ const loadMore2 = async ()=>{
       <button @click="console.log(getChatSession(useChatStore().me.id === 1 ? 2 : 1).getRawChat())">log chat</button> <br>
       <button @click="showDb">Show DB</button> <br>
       <button @click="clearDB">Clear DB</button> <br>
-      <button @click="loadMore2">TEST DB</button>
+      <button @click="loadMore">TEST DB</button>
     </div>
   </main>
 </template>

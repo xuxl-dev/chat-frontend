@@ -171,26 +171,29 @@ export class ChatSession extends EventEmitter {
     return this.conversation.send(msg)
   }
 
-  loadMore2() {
+  async loadMore2() {
     console.log('loading more2')
     this.isLoading.value = true
 
-    Db.instance().getMessageBetween2(
+    const msgs = await Db.instance().getMessageBetween2(
       this.bindingGroup,
       useChatStore().me?.id ?? -1,
       new Date(0), // no lower bound
       this.getMsgRef(this.mostEarlyMsgId.value ?? '')?.value._msg.sentAt ?? new Date(), //TODO test this
       5
-    ).then((msgs) => {
-      console.log('loadMore', msgs)
-      msgs.forEach((msg) => {
-        this.setMsg(MessageWarp.fromDbMessage(msg))
-      })
+    )
+    console.log('loadMore', msgs)
+
+    msgs.forEach((msg) => {
+      this.setMsg(MessageWarp.fromDbMessage(msg))
     })
+
 
     setTimeout(() => {
       this.isLoading.value = false
     }, 1000);
+
+    return msgs
   }
 
   /**

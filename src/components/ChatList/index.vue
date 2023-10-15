@@ -34,6 +34,13 @@ function runChunked(task: Function, data: any[], chunkSize: number) {
   _run()
 }
 
+const loadMore = ()=>{
+  msglistRef.value.onTopHit()
+}
+
+defineExpose({
+  loadMore
+})
 
 </script>
 

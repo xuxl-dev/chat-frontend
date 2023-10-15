@@ -45,7 +45,7 @@ const getChatRange = () => {
   }
 }
 
-const insertNewStackAt = (msg: MessageWarp, idx:number) => {
+const insertNewStackAt = (msg: MessageWarp, idx: number) => {
   source.value.splice(idx, 0, reactive(new StackedMessage([ref(msg)])))
 }
 
@@ -186,8 +186,18 @@ const scrollToBottom = () => {
   virtualListRef.value?.scrollToBottom()
 }
 
-const onTopHit = () => {
-  currentSession?.loadMore2()
+const onTopHit = async () => {
+  // load more history messages
+  // fix the scroll position
+  // get the pos
+  const scr = virtualListRef.value
+  const szPre = scr.getScrollSize()
+  const offset = scr.getOffset()
+  const res = await currentSession?.loadMore2()
+  const szPost = scr.getScrollSize()
+  const newOffset = offset + (szPost - szPre)
+  console.log(`offset: ${offset}, szPre: ${szPre}, szPost: ${szPost}, newOffset: ${newOffset}`)
+  virtualListRef.value?.scrollToOffset(newOffset)
 }
 
 const onBottomHit = () => {
@@ -195,7 +205,8 @@ const onBottomHit = () => {
 }
 
 defineExpose({
-  scrollToBottom
+  scrollToBottom,
+  onTopHit
 })
 
 </script>

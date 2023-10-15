@@ -159,7 +159,7 @@ export class Db extends Dexie {
     receiverId: number,
     from: Date,
     to: Date,
-    limit : number = 100,
+    limit: number = 100,
   ): Promise<ILocalMessage[]> {
     // we use native indexedDB API to query
     // get the backend db (native indexedDB)
@@ -171,7 +171,6 @@ export class Db extends Dexie {
       await new Promise((resolve) => setTimeout(resolve, 500))
       return await this.getMessageBetween2(senderId, receiverId, from, to, limit)
     }
-    console.log('getMessageBetween2', senderId, receiverId, from, to, limit);
 
     // get the store
     const store = idxDB.transaction('chats', 'readonly').objectStore('chats')
@@ -215,8 +214,19 @@ export class Db extends Dexie {
       getFromAToB(senderId, receiverId),
       getFromAToB(receiverId, senderId)
     ])
-
-    return retA.concat(retB)
+    // sort
+    retA.sort((a, b) => a.sentAt.getTime() - b.sentAt.getTime())
+    retB.sort((a, b) => a.sentAt.getTime() - b.sentAt.getTime())
+    const min = (a: Date, b: Date) => a.getTime() < b.getTime() ? a : b
+    // to avoid inconsistent order, we remove the messages that exceed the min(max(sentAt))
+    if (!retA.length && !retB.length) {
+      const deleteAfter = min(retA.at(-1).sentAt, retB.at(-1).sentAt)
+      retA.splice(retA.findIndex((msg) => msg.sentAt.getTime() > deleteAfter.getTime()))
+      retB.splice(retB.findIndex((msg) => msg.sentAt.getTime() > deleteAfter.getTime()))
+    }
+    console.log('retA', retA)
+    console.log('retB', retB)
+    return retA.concat(retB).sort((a, b) => b.sentAt.getTime() - a.sentAt.getTime())
   }
 
 
