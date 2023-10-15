@@ -33,6 +33,12 @@ const clearDB = async () => {
   console.log(Dexie.delete('ChatDatabase'))
 }
 
+const loadMore2 = async ()=>{
+  const me = useChatStore().me
+  const to = me.id === 1 ? 2 : 1
+  getChatSession(to).loadMore2()
+}
+
 </script>
 
 <template>
@@ -47,7 +53,7 @@ const clearDB = async () => {
       <button @click="console.log(getChatSession(useChatStore().me.id === 1 ? 2 : 1).getRawChat())">log chat</button> <br>
       <button @click="showDb">Show DB</button> <br>
       <button @click="clearDB">Clear DB</button> <br>
-      
+      <button @click="loadMore2">TEST DB</button>
     </div>
   </main>
 </template>

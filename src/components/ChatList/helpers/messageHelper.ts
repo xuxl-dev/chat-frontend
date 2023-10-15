@@ -74,7 +74,7 @@ export class Message implements IMessage {
       this.senderId = config.senderId
       this.receiverId = config.receiverId
       this.content = config.content
-      this.sentAt = config.sentAt
+      this.sentAt = typeof config.sentAt === 'string' ? new Date(config.sentAt) : config.sentAt
       this.hasReadCount = config.hasReadCount
       this.flag = config.flag
     }

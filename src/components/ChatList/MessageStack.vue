@@ -10,6 +10,7 @@
 
     <div class="flex flex-col">
       <!-- {{ stackedMessage.sender }} {{ sender }} -->
+      STK({{ source.stack_id }})::sz={{ source.messages?.length }}
       <TransitionGroup name="list"
                        tag="div">
         <MessageItem v-for="(v, i) in source.messages"

@@ -59,24 +59,12 @@ const insertMessage = (msg: MessageWarp) => {
   if (source.value.length === 0) {
     // empty
     insertNewStackAt(msg, 0)
+    console.log('empty, insert to the front')
     return
   }
   const { start, end } = getChatRange()!
   // console.log(`start: ${start}, ${typeof start}, end: ${end}, new msg: ${sentAt}`, start)
   // console.log(`first: ${firstStack().sender.id}, last: ${lastStack().sender.id}, new msg: ${senderId}`)
-
-  // insert to the front, only if the sender is not the same as the first stack
-  if (sentAt < start && senderId !== firstStack().sender.id) {
-    console.warn('insert to the front')
-    insertNewStackAt(msg, 0)
-    return
-  }
-  // insert to the back, only if the sender is not the same as the last stack
-  if (sentAt > end && senderId !== lastStack().sender.id) {
-    console.warn('insert to the back')
-    insertNewStackAt(msg, source.value.length)
-    return
-  }
   // insert to the front of the first stack, only if the sender is the same as the first stack
   if (sentAt < start && senderId === firstStack().sender.id) {
     console.warn('insert to the front of the first stack')
@@ -89,6 +77,19 @@ const insertMessage = (msg: MessageWarp) => {
     lastStack().append(ref(msg))
     return
   }
+  // insert to the front, only if the sender is not the same as the first stack
+  if (sentAt < start && senderId !== firstStack().sender.id) {
+    console.warn('insert to the front')
+    insertNewStackAt(msg, 0)
+    return
+  }
+  // insert to the back, only if the sender is not the same as the last stack
+  if (sentAt > end && senderId !== lastStack().sender.id) {
+    console.warn('insert to the back')
+    insertNewStackAt(msg, source.value.length)
+    return
+  }
+
 
   // search
   // the target may be:
@@ -186,7 +187,7 @@ const scrollToBottom = () => {
 }
 
 const onTopHit = () => {
-  currentSession?.loadMore()
+  currentSession?.loadMore2()
 }
 
 const onBottomHit = () => {
