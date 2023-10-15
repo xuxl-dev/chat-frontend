@@ -2,7 +2,7 @@ import { Socket, io } from 'socket.io-client'
 import { CryptoHelper } from './cipher'
 import EventEmitter from 'eventemitter3'
 import useChatStore, { updateConversation } from '@/store/modules/chatStore'
-import { randBetween } from '@/utils/utils'
+import { randBetween, timeout } from '@/utils/utils'
 
 export class CreateMessageDto {
   receiverId!: number
@@ -404,7 +404,7 @@ export class Conversation extends EventEmitter {
     this.send_pipeline = this.send_pipeline.filter((h) => h !== handler)
   }
 
-  async unableE2EE() {
+  async enableE2EE() {
     this.ctx['isE2eePassive'] = false
     const pubkey = this.ctx.messageHelper.cryptoHelper.getPublicKey()
     await this.send(
@@ -434,22 +434,22 @@ class E2EEMessageReceiver implements MessageHandler {
   handlerMap = new Map<E2EEStatus, (msg: Message) => any | Promise<any>>([
     [
       E2EEStatus.LISTEN_PUB_KEY,
-      (msg) => {
+      async (msg) => {
         const content = msg.content as unknown as {
           rsaPublicKey: string
           type: 'rsa-public-key'
         }
-        this.handlePubKeyPhase(content)
+        await this.handlePubKeyPhase(content)
       }
     ],
     [
       E2EEStatus.LISTEN_AES_KEY,
-      (msg) => {
+      async (msg) => {
         const content = msg.content as unknown as {
           encryptedAESKey: string
           type: 'encrypted-aes-key'
         }
-        this.handleAESKeyPhase(content)
+        await this.handleAESKeyPhase(content)
       }
     ]
   ])
@@ -462,12 +462,12 @@ class E2EEMessageReceiver implements MessageHandler {
     await this.handlerMap.get(this.status)?.(msg)
   }
 
-  private handleAESKeyPhase(content: {
+  private async handleAESKeyPhase(content: {
     encryptedAESKey: string
     type: 'encrypted-aes-key'
   }) {
     if (content) {
-      this.cipher.decryptAndSaveAESKey(content.encryptedAESKey)
+      await this.cipher.decryptAndSaveAESKey(content.encryptedAESKey)
       this.status = E2EEStatus.READY
       this.ctx.unregisterPipeline(this)
       // register e2ee sender
@@ -478,7 +478,7 @@ class E2EEMessageReceiver implements MessageHandler {
     }
   }
 
-  private handlePubKeyPhase(content: {
+  private async handlePubKeyPhase(content: {
     rsaPublicKey: string
     type: 'rsa-public-key'
   }) {
@@ -497,10 +497,10 @@ class E2EEMessageReceiver implements MessageHandler {
       }
 
       this.cipher.setBobPublicKey(content.rsaPublicKey)
-
+      console.log('bob public key received: ', content.rsaPublicKey)
       this.ctx.sendMessage(
         {
-          encryptedAESKey: this.cipher.getEncryptedAESKey(),
+          encryptedAESKey: await this.cipher.getEncryptedAESKey(),
           type: 'encrypted-aes-key'
         },
         MessageFlag.KEY_EXCHANGE
@@ -524,7 +524,7 @@ class E2EEMessageSender implements MessageHandler {
       throw new Error('bob_aes is not ready')
     }
     //TODO check string or object
-    msg.content = this.ctx.messageHelper.cryptoHelper.encryptMessage(
+    msg.content = await this.ctx.messageHelper.cryptoHelper.encryptMessage(
       msg.content as string
     )
   }
@@ -622,14 +622,22 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
   }
 
   async sendMessage(msg: Message) {
-    return new Promise<Message>((resolve, reject) => { //TODO, add timeout
-      // if (msg.receiverId === this.user?.id) {
-      //   throw new Error('cannot send message to self')
-      // }
-      this.socket.emit('message', msg, (ret: Message) => {
-        resolve(ret as Message)
-      })
-    })
+    // return new Promise<Message>((resolve, reject) => { //TODO, add timeout
+    //   this.socket.emit('message', msg, (ret: Message) => {
+    //     resolve(ret as Message)
+    //   })
+    // })
+    return timeout(() => {
+      return () => {
+        console.log('sending message: ', msg, ' to ', msg.receiverId)
+        return new Promise<Message>((resolve, reject) => {
+          this.socket.emit('message', msg, (ret: Message) => {
+            console.log('message ret: ', ret)
+            resolve(ret as Message)
+          })
+        })
+      }
+    }, 1000)
   }
 
   cryptoHelper: CryptoHelper = new CryptoHelper()
@@ -681,7 +689,7 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
       this.newConversation(to)
     }
     const conversation = this.conversationMap.get(to)
-    await conversation.unableE2EE()
+    await conversation.enableE2EE()
   }
 
   public getConversation(id: number): Conversation {

@@ -9,8 +9,8 @@ export class CryptoHelper {
   private bob_aes_key: CryptoJS.lib.WordArray
 
   constructor() {
-    this.rsaPair = new JSEncrypt({ default_key_size: '2048' });
-    this.bob_rsa = new JSEncrypt({ default_key_size: '2048' });
+    this.rsaPair = new JSEncrypt({ default_key_size: '1024' });
+    this.bob_rsa = new JSEncrypt({ default_key_size: '1024' });
     this.aesKey = CryptoJS.lib.WordArray.random(32);
   }
 
@@ -23,10 +23,17 @@ export class CryptoHelper {
   }
 
   public async getEncryptedAESKey() {
-    const encryptedAESKey = await run(this.bob_rsa.encrypt, this.aesKey.toString(CryptoJS.enc.Base64));
+    console.log(`this.aesKey`, this.aesKey.toString(CryptoJS.enc.Base64));
+    console.log(`this.bob_rsa`, this.bob_rsa.encrypt);
+    // const encryptedAESKey = await run(this.bob_rsa.encrypt, this.aesKey.toString(CryptoJS.enc.Base64));
+    const encryptedAESKey = await run((rsa, aes) => {
+      return rsa.encrypt(aes.toString(CryptoJS.enc.Base64));
+    }, this.bob_rsa, this.aesKey);
+    // const encryptedAESKey = this.bob_rsa.encrypt(this.aesKey.toString(CryptoJS.enc.Base64));
     if (encryptedAESKey === false) {
       throw new Error('Failed to encrypt AES key');
     }
+    console.log(`encryptedAESKey`, encryptedAESKey);
     return encryptedAESKey;
   }
 
