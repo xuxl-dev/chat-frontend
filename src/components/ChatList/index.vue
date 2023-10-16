@@ -7,6 +7,7 @@
 import { ref, onMounted, computed } from 'vue';
 import MsgList from './MsgList.vue';
 import useChatStore from '@/store/modules/chatStore';
+
 const msglistRef = ref<any | null>(null)
 const store = useChatStore()
 const curChannel = computed(() => {

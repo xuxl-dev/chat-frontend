@@ -203,6 +203,14 @@ export class ChatSession extends EventEmitter {
   getRawChat() {
     return this.chat
   }
+
+  /**
+   * @deprecated
+   * @returns Conversation object
+   */
+  getConversation() {
+    return this.conversation
+  }
 }
 
 export default useChatStore

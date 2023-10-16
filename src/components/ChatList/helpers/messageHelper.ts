@@ -1,8 +1,9 @@
 import { Socket, io } from 'socket.io-client'
-import { CryptoHelper } from './cipher'
 import EventEmitter from 'eventemitter3'
 import useChatStore, { updateConversation } from '@/store/modules/chatStore'
-import { randBetween } from '@/utils/utils'
+import { randBetween, timeout } from '@/utils/utils'
+import { Cipher2 } from './cipher2'
+import PQueue from 'p-queue'
 
 export class CreateMessageDto {
   receiverId!: number
@@ -74,7 +75,10 @@ export class Message implements IMessage {
       this.senderId = config.senderId
       this.receiverId = config.receiverId
       this.content = config.content
-      this.sentAt = typeof config.sentAt === 'string' ? new Date(config.sentAt) : config.sentAt
+      this.sentAt =
+        typeof config.sentAt === 'string'
+          ? new Date(config.sentAt)
+          : config.sentAt
       this.hasReadCount = config.hasReadCount
       this.flag = config.flag
     }
@@ -126,10 +130,13 @@ export class Message implements IMessage {
 }
 export function getMessageStr(msg: Message) {
   //this is dirty
-  return `${findFlagsByValue(msg.flag).join('|')}\n ${msg.senderId} -> ${msg.receiverId
-    } ${typeof msg.content === 'object' ? JSON.stringify(msg.content) : msg.content
-    }`
+  return `${findFlagsByValue(msg.flag).join('|')}\n ${msg.senderId} -> ${
+    msg.receiverId
+  } ${
+    typeof msg.content === 'object' ? JSON.stringify(msg.content) : msg.content
+  }`
 }
+
 function findFlagsByValue(value: number): string[] {
   const flags: string[] = []
 
@@ -276,8 +283,6 @@ export class MessageHelper {
   public get socket(): Socket {
     return this._socket
   }
-  cryptoHelper = new CryptoHelper()
-  rsaPublicKey = this.cryptoHelper.getPublicKey()
   isPassive = true
 }
 
@@ -318,9 +323,9 @@ interface IMessageHelper {
     to: number
   ): any | Promise<any>
   sendMessage(msg: Message): Message | Promise<Message>
-  cryptoHelper: CryptoHelper
+  // cryptoHelper: CryptoHelper
+  cipher: Cipher2
 }
-
 
 export class Conversation extends EventEmitter {
   public group: number
@@ -354,13 +359,24 @@ export class Conversation extends EventEmitter {
     if (this.shallAcceptPredicate(message)) {
       for (const handler of this.receive_pipeline) {
         if (handler.pattern(message)) {
-          if (handler.parallel) {
-            handler.handler(message)
-          } else {
-            await handler.handler(message)
-          }
-          if (!handler.passthrough) {
-            break
+          try {
+            if (handler.parallel) {
+              handler.handler(message)
+            } else {
+              await handler.handler(message)
+            }
+            if (!handler.passthrough) {
+              break
+            }
+          } catch (e) {
+            if (e instanceof StopPropagationException) {
+              break
+            }
+            if (e instanceof StopProcessingException) {
+              return
+            } else {
+              console.error(e)
+            }
           }
         }
       }
@@ -373,7 +389,6 @@ export class Conversation extends EventEmitter {
   }
 
   /**
-   *
    * @param message  in message, `receiverId` is overwritten by conversation's group
    */
   public async send(message: Message) {
@@ -404,9 +419,12 @@ export class Conversation extends EventEmitter {
     this.send_pipeline = this.send_pipeline.filter((h) => h !== handler)
   }
 
-  async unableE2EE() {
+  async enableE2EE() {
     this.ctx['isE2eePassive'] = false
-    const pubkey = this.ctx.messageHelper.cryptoHelper.getPublicKey()
+    if (!this.cipher.hasInit) {
+      await this.cipher.init(this.ctx['isE2eePassive'])
+    }
+    const pubkey = await this.cipher.getMyPublicKey()
     await this.send(
       Message.new({
         receiverId: this.group,
@@ -417,6 +435,29 @@ export class Conversation extends EventEmitter {
         flag: MessageFlag.KEY_EXCHANGE
       })
     )
+  }
+
+  public get cipher(): Cipher2 {
+    return this.ctx.messageHelper.cipher
+  }
+}
+
+/**
+ * only stop propagation of message
+ * if willing to not to display this message, throw StopProcessingException
+ */
+export class StopPropagationException extends Error {
+  constructor() {
+    super()
+  }
+}
+
+/**
+ * stop processing message and prevent it from displaying
+ */
+export class StopProcessingException extends Error {
+  constructor() {
+    super()
   }
 }
 
@@ -429,27 +470,37 @@ enum E2EEStatus {
 const isE2eePassiveToken = 'isE2eePassive'
 class E2EEMessageReceiver implements MessageHandler {
   status = E2EEStatus.LISTEN_PUB_KEY
-  passthrough = true
+  // this layer will stop propagation of message
+  // no further handler will be executed
+  passthrough = false
+  parallel?: boolean = false
+  queue = new PQueue({ concurrency: 1 })
 
   handlerMap = new Map<E2EEStatus, (msg: Message) => any | Promise<any>>([
     [
       E2EEStatus.LISTEN_PUB_KEY,
-      (msg) => {
+      async (msg) => {
         const content = msg.content as unknown as {
-          rsaPublicKey: string
+          rsaPublicKey: {
+            data: Array<number>
+            type: 'Buffer'
+          }
           type: 'rsa-public-key'
         }
-        this.handlePubKeyPhase(content)
+        await this.handlePubKeyPhase(content)
       }
     ],
     [
       E2EEStatus.LISTEN_AES_KEY,
-      (msg) => {
+      async (msg) => {
         const content = msg.content as unknown as {
-          encryptedAESKey: string
+          encryptedAESKey: {
+            data: Uint8Array
+            type: 'Buffer'
+          }
           type: 'encrypted-aes-key'
         }
-        this.handleAESKeyPhase(content)
+        await this.handleAESKeyPhase(content)
       }
     ]
   ])
@@ -459,77 +510,99 @@ class E2EEMessageReceiver implements MessageHandler {
     return !!(msg.flag & MessageFlag.KEY_EXCHANGE)
   }
   handler = async (msg: Message) => {
-    await this.handlerMap.get(this.status)?.(msg)
+    this.queue.add(async () => {
+      // make sure the handler is executed in order
+      await this.handlerMap.get(this.status)?.(msg)
+    })
+    // stop propagation
+    throw new StopProcessingException()
   }
 
-  private handleAESKeyPhase(content: {
-    encryptedAESKey: string
+  private async handleAESKeyPhase(content: {
+    encryptedAESKey: {
+      data: Uint8Array
+      type: 'Buffer'
+    }
     type: 'encrypted-aes-key'
   }) {
     if (content) {
-      this.cipher.decryptAndSaveAESKey(content.encryptedAESKey)
+      await this.cipher.decryptAndSaveAESKey(
+        Uint8Array.from(content.encryptedAESKey.data).buffer
+      )
       this.status = E2EEStatus.READY
-      this.ctx.unregisterPipeline(this)
       // register e2ee sender
-      this.ctx.registerPipeline(new E2EEMessageSender(), 'send')
       this.ctx.conversation.emit('e2ee-ready')
+      console.log('e2ee ready!')
+      this.ctx.registerPipeline(new E2EEMessageSender(), 'send')
+      this.ctx.unregisterPipeline(this)
     } else {
       throw new Error('unexpected message')
     }
   }
 
-  private handlePubKeyPhase(content: {
-    rsaPublicKey: string
+  private async handlePubKeyPhase(content: {
+    rsaPublicKey: {
+      data: Array<number>
+      type: 'Buffer'
+    }
     type: 'rsa-public-key'
   }) {
+    // console.log('handlePubKeyPhase: ', content)
     if (content) {
       this.ctx.rsaPublicKey = content.rsaPublicKey
       // send my rsa public key, and encrypted my aes key with the other side's rsa public key
-
+      if (!this.cipher.hasInit) {
+        await this.cipher.init(this.ctx[isE2eePassiveToken])
+      }
+      // console.log(`@content`, content)
+      await this.cipher.setPeerPublicKey(
+        Uint8Array.from(content.rsaPublicKey.data).buffer
+      )
       if (this.ctx[isE2eePassiveToken] ?? true) {
         this.ctx.sendMessage(
           {
-            rsaPublicKey: this.ctx.messageHelper.cryptoHelper.getPublicKey(),
+            rsaPublicKey: await this.cipher.getMyPublicKey(),
             type: 'rsa-public-key'
           },
           MessageFlag.KEY_EXCHANGE
         )
       }
 
-      this.cipher.setBobPublicKey(content.rsaPublicKey)
-
+      // console.log('bob public key received: ', content.rsaPublicKey)
       this.ctx.sendMessage(
         {
-          encryptedAESKey: this.cipher.getEncryptedAESKey(),
+          encryptedAESKey: await this.cipher.getEncryptedAESKey(),
           type: 'encrypted-aes-key'
         },
         MessageFlag.KEY_EXCHANGE
       )
-
+      // console.warn(`handle pubkey phase done!`)
       this.status = E2EEStatus.LISTEN_AES_KEY
     } else {
       throw new Error('unexpected message')
     }
   }
 
-  public get cipher(): CryptoHelper {
-    return this.ctx.messageHelper.cryptoHelper
+  public get cipher(): Cipher2 {
+    return this.ctx.messageHelper.cipher
   }
 }
 
 class E2EEMessageSender implements MessageHandler {
   pattern: (msg: Message) => boolean = (msg) => !!(msg.flag & MessageFlag.E2EE)
   handler: (msg: Message) => any = async (msg) => {
-    if (!this.ctx.messageHelper.cryptoHelper.bob_aes) {
+    if (!this.cipher.AESKeyReady()) {
       throw new Error('bob_aes is not ready')
     }
     //TODO check string or object
-    msg.content = this.ctx.messageHelper.cryptoHelper.encryptMessage(
-      msg.content as string
-    )
+    msg.content = await this.cipher.encryptMessage(msg.content as string)
   }
   ctx: ConversationCtx
   passthrough?: boolean = true
+
+  public get cipher(): Cipher2 {
+    return this.ctx.messageHelper.cipher
+  }
 }
 
 /**
@@ -547,14 +620,6 @@ class MessageReceiver implements MessageHandler {
       },
       MessageFlag.ACK
     )
-
-    // await this.ctx.sendMessage( //TODO implement read
-    //   {
-    //     ackMsgId: msg.msgId,
-    //     type: ACKMsgType.READ
-    //   },
-    //   MessageFlag.ACK
-    // )
   }
   ctx: ConversationCtx
   passthrough?: boolean = true
@@ -622,17 +687,21 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
   }
 
   async sendMessage(msg: Message) {
-    return new Promise<Message>((resolve, reject) => { //TODO, add timeout
-      // if (msg.receiverId === this.user?.id) {
-      //   throw new Error('cannot send message to self')
-      // }
-      this.socket.emit('message', msg, (ret: Message) => {
-        resolve(ret as Message)
-      })
-    })
+    return timeout(() => {
+      return () => {
+        console.log('sending message: ', msg, ' to ', msg.receiverId)
+        return new Promise<Message>((resolve, reject) => {
+          this.socket.emit('message', msg, (ret: Message) => {
+            console.log('message ret: ', ret)
+            resolve(ret as Message)
+          })
+        })
+      }
+    }, 1000)
   }
 
-  cryptoHelper: CryptoHelper = new CryptoHelper()
+  // cryptoHelper: CryptoHelper = new CryptoHelper()
+  cipher: Cipher2 = new Cipher2()
 
   public async init() {
     return new Promise<void>((resolve, reject) => {
@@ -681,7 +750,8 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
       this.newConversation(to)
     }
     const conversation = this.conversationMap.get(to)
-    await conversation.unableE2EE()
+    await this.cipher.init(false)
+    await conversation.enableE2EE()
   }
 
   public getConversation(id: number): Conversation {
