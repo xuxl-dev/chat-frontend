@@ -1,5 +1,4 @@
 import { Socket, io } from 'socket.io-client'
-import { CryptoHelper } from './cipher'
 import EventEmitter from 'eventemitter3'
 import useChatStore, { updateConversation } from '@/store/modules/chatStore'
 import { randBetween, timeout } from '@/utils/utils'
@@ -284,8 +283,6 @@ export class MessageHelper {
   public get socket(): Socket {
     return this._socket
   }
-  cryptoHelper = new CryptoHelper()
-  rsaPublicKey = this.cryptoHelper.getPublicKey()
   isPassive = true
 }
 
