@@ -12,8 +12,6 @@ const { bkm } = useChatStore()
 
 onMounted(async () => {
   await bkm.init()
-  const res = await run(generateRSAKeyPair)
-  console.log(res)
 })
 
 const msg = ref('Lorem ipsum')

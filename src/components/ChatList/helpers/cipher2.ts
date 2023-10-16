@@ -29,7 +29,7 @@ export async function generateAESKey(): Promise<CryptoKey> {
 
 // 使用外部公钥加密 AES 密钥
 export async function encryptAESKeyWithPublicKey(
-  aesKey: CryptoKey,
+  aesKey: ArrayBuffer,
   publicKey: CryptoKey
 ): Promise<ArrayBuffer> {
   const encryptedKey = await self.crypto.subtle.encrypt(
@@ -37,7 +37,7 @@ export async function encryptAESKeyWithPublicKey(
       name: 'RSA-OAEP'
     },
     publicKey,
-    new TextEncoder().encode(aesKey.toString())
+    aesKey
   )
   return encryptedKey
 }
@@ -80,18 +80,18 @@ export async function encryptWithAESKey(
  * 4. 使用 RSA 私钥解密 AES 密钥
  * 5. 使用 AES 密钥加密消息
  * 6. 使用 AES 密钥解密消息
- * 
+ *
  * Alice -RsaPubKey-> Bob
  * Alice <-AesEncryptedKey- Bob
  * (Alice decrypts AesEncryptedKey with her private key, now she has Bob's AES key)
  * Alice -AesEncryptedMessage-> Bob
  * Alice <-AesEncryptedMessage- Bob
  */
-class Cipher2 {
+export class Cipher2 {
   private AESKey?: CryptoKey
   private myRSAKeyPair?: CryptoKeyPair
   private peerPublicKey?: CryptoKey
-
+  public hasInit = false
   constructor() {
     this.AESKey = null
     this.myRSAKeyPair = null
@@ -100,41 +100,74 @@ class Cipher2 {
 
   public async init(isPassive = false) {
     this.myRSAKeyPair = await run(generateRSAKeyPair)
-    if (isPassive) {
-      // passive side, wait for peer's public key
-      // and don't generate AES key, the peer will send it to us
-      this.AESKey = await run(generateAESKey)
-    }
+    this.AESKey = await run(generateAESKey)
+    this.hasInit = true
+    // extract aes key
+    // const rawAESKey = await self.crypto.subtle.exportKey(
+    //   'raw',
+    //   this.AESKey
+    // )
+    // console.warn(`rawAESKey`, rawAESKey)
   }
 
-  public getMyPublicKey(): CryptoKey {
-    return this.myRSAKeyPair.publicKey
+  // export public key
+  public async getMyPublicKey() {
+    const exported = await self.crypto.subtle.exportKey(
+      'spki',
+      this.myRSAKeyPair.publicKey
+    )
+    return exported
+  }
+
+  public async setPeerPublicKey(publicKey: ArrayBuffer) {
+    let imported = await self.crypto.subtle.importKey(
+      'spki',
+      publicKey,
+      {
+        name: 'RSA-OAEP',
+        hash: 'SHA-256'
+      },
+      true,
+      ['encrypt']
+    )
+    this.peerPublicKey = imported
   }
 
   /**
    * get encrypted AES key (encrypted with peer's public key)
-   * @returns 
+   * @returns
    */
   public async getEncryptedAESKey(): Promise<ArrayBuffer> {
+    // get raw AES key
+    const rawAESKey = await self.crypto.subtle.exportKey(
+      'raw',
+      this.AESKey
+    )
     const encryptedAESKey = await run(
       encryptAESKeyWithPublicKey,
-      this.AESKey,
+      rawAESKey,
       this.peerPublicKey
     )
+    // console.log(`encryptedAESKey`, encryptedAESKey)
     return encryptedAESKey
   }
 
   /**
    * use my private key to decrypt the encrypted AES key (received from peer, encrypted with my public key)
-   * @param encryptedAESKey 
-   * @returns 
+   * @param encryptedAESKey
+   * @returns
    */
   public async decryptAndSaveAESKey(encryptedAESKey: ArrayBuffer) {
-    const decryptedAESKey = await run(
-      decryptWithPrivateKey,
+    // const decryptedAESKey = await run(
+    //   decryptWithPrivateKey,
+    //   encryptedAESKey,
+    //   this.myRSAKeyPair.privateKey
+    // )
+    const decryptedAESKey = await decryptWithPrivateKey(
       encryptedAESKey,
       this.myRSAKeyPair.privateKey
     )
+    // console.log(`decryptedAESKey`, decryptedAESKey)
     // convert ArrayBuffer to CryptoKey
     const aesKey = await self.crypto.subtle.importKey(
       'raw',
@@ -151,22 +184,18 @@ class Cipher2 {
 
   /**
    * encrypt message with AES key
-   * @param message 
-   * @returns 
+   * @param message
+   * @returns
    */
   public async encryptMessage(message: string) {
-    const encryptedMessage = await run(
-      encryptWithAESKey,
-      message,
-      this.AESKey
-    )
+    const encryptedMessage = await run(encryptWithAESKey, message, this.AESKey)
     return encryptedMessage
   }
 
   /**
    * decrypt message with AES key
-   * @param encryptedMessage 
-   * @returns 
+   * @param encryptedMessage
+   * @returns
    */
   public async decryptMessage(encryptedMessage: ArrayBuffer) {
     const decryptedMessage = await self.crypto.subtle.decrypt(
@@ -178,8 +207,16 @@ class Cipher2 {
     )
     return decryptedMessage
   }
+
+  public AESKeyReady() {
+    return this.AESKey !== null
+  }
 }
 
 export function arrayBufferToString(buffer: ArrayBuffer) {
   return new TextDecoder().decode(buffer)
+}
+
+export function stringToArrayBuffer(str: string): ArrayBuffer {
+  return new TextEncoder().encode(str).buffer
 }

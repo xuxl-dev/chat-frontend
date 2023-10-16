@@ -23,8 +23,8 @@ export class CryptoHelper {
   }
 
   public async getEncryptedAESKey() {
-    console.log(`this.aesKey`, this.aesKey.toString(CryptoJS.enc.Base64));
-    console.log(`this.bob_rsa`, this.bob_rsa.encrypt);
+    // console.log(`this.aesKey`, this.aesKey.toString(CryptoJS.enc.Base64));
+    // console.log(`this.bob_rsa`, this.bob_rsa.encrypt);
     // const encryptedAESKey = await run(this.bob_rsa.encrypt, this.aesKey.toString(CryptoJS.enc.Base64));
     const encryptedAESKey = await run((rsa, aes) => {
       return rsa.encrypt(aes.toString(CryptoJS.enc.Base64));
@@ -33,7 +33,7 @@ export class CryptoHelper {
     if (encryptedAESKey === false) {
       throw new Error('Failed to encrypt AES key');
     }
-    console.log(`encryptedAESKey`, encryptedAESKey);
+    // console.log(`encryptedAESKey`, encryptedAESKey);
     return encryptedAESKey;
   }
 
