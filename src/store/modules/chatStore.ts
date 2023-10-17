@@ -150,9 +150,14 @@ export class ChatSession extends EventEmitter {
   }
 
   async send(msg: Message) {
+    const msg_copy = msg.clone()
     const sentMsgAck = await this.conversation.send(msg)
-    msg.msgId = (sentMsgAck as any).content.ackMsgId
-    const warp = MessageWarp.fromMessage(msg)
+
+    // why do we need to clone the message?
+    // in the conversation.send, the message will be modified, encrypted, and sent to server
+    // but we need to keep the original message, so we clone it
+    msg_copy.msgId = (sentMsgAck as any).content.ackMsgId
+    const warp = MessageWarp.fromMessage(msg_copy)
     this.setMsg(warp)
     return msg
   }

@@ -132,6 +132,18 @@ export class Message implements IMessage {
     this.flag = flag
     return this
   }
+
+  clone() {
+    return new Message({
+      msgId: this.msgId,
+      senderId: this.senderId,
+      receiverId: this.receiverId,
+      content: this.content,
+      sentAt: this.sentAt,
+      hasReadCount: this.hasReadCount,
+      flag: this.flag
+    })
+  }
 }
 export function getMessageStr(msg: Message) {
   //this is dirty
@@ -399,7 +411,6 @@ export class Conversation extends EventEmitter {
   public async send(message: Message) {
     message.receiverId = this.group
     for (const handler of this.send_pipeline) {
-      console.log('conv send pipeline: ', handler)
       if (handler.pattern(message)) {
         await handler.handler(message)
         if (!handler.passthrough) {
@@ -407,7 +418,6 @@ export class Conversation extends EventEmitter {
         }
       }
     }
-    console.log('conv sending message: ', message)
     return this.ctx.messageHelper.sendMessage(message)
   }
 
