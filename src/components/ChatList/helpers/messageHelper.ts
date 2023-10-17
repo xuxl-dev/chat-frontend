@@ -127,6 +127,11 @@ export class Message implements IMessage {
     this.senderId = senderId
     return this
   }
+
+  withFlag(flag: number) {
+    this.flag = flag
+    return this
+  }
 }
 export function getMessageStr(msg: Message) {
   //this is dirty
@@ -357,15 +362,15 @@ export class Conversation extends EventEmitter {
 
   public async notify(message: Message) {
     if (this.shallAcceptPredicate(message)) {
-      for (const handler of this.receive_pipeline) {
-        if (handler.pattern(message)) {
+      for (const pipe of this.receive_pipeline) {
+        if (pipe.pattern(message)) {
           try {
-            if (handler.parallel) {
-              handler.handler(message)
+            if (pipe.parallel) {
+              pipe.handler(message)
             } else {
-              await handler.handler(message)
+              await pipe.handler(message)
             }
-            if (!handler.passthrough) {
+            if (!pipe.passthrough) {
               break
             }
           } catch (e) {
@@ -394,6 +399,7 @@ export class Conversation extends EventEmitter {
   public async send(message: Message) {
     message.receiverId = this.group
     for (const handler of this.send_pipeline) {
+      console.log('conv send pipeline: ', handler)
       if (handler.pattern(message)) {
         await handler.handler(message)
         if (!handler.passthrough) {
@@ -401,6 +407,7 @@ export class Conversation extends EventEmitter {
         }
       }
     }
+    console.log('conv sending message: ', message)
     return this.ctx.messageHelper.sendMessage(message)
   }
 
@@ -502,42 +509,36 @@ class E2EEMessageReceiver implements MessageHandler {
         }
         await this.handleAESKeyPhase(content)
       }
+    ],
+    [
+      E2EEStatus.READY,
+      async (msg) => {
+        const content = msg.content as {
+          secret: {
+            data: Uint8Array
+            type: 'Buffer'
+          }
+          iv: {
+            data: Uint8Array
+            type: 'Buffer'
+          }
+        }
+        await this.handleMessagePhase(content, msg)
+      }
     ]
   ])
 
   ctx: ConversationCtx
   pattern = (msg: Message) => {
-    return !!(msg.flag & MessageFlag.KEY_EXCHANGE)
+    return (
+      !!(msg.flag & MessageFlag.KEY_EXCHANGE) || !!(msg.flag & MessageFlag.E2EE)
+    )
   }
   handler = async (msg: Message) => {
-    this.queue.add(async () => {
+    await this.queue.add(async () => {
       // make sure the handler is executed in order
       await this.handlerMap.get(this.status)?.(msg)
     })
-    // stop propagation
-    throw new StopProcessingException()
-  }
-
-  private async handleAESKeyPhase(content: {
-    encryptedAESKey: {
-      data: Uint8Array
-      type: 'Buffer'
-    }
-    type: 'encrypted-aes-key'
-  }) {
-    if (content) {
-      await this.cipher.decryptAndSaveAESKey(
-        Uint8Array.from(content.encryptedAESKey.data).buffer
-      )
-      this.status = E2EEStatus.READY
-      // register e2ee sender
-      this.ctx.conversation.emit('e2ee-ready')
-      console.log('e2ee ready!')
-      this.ctx.registerPipeline(new E2EEMessageSender(), 'send')
-      this.ctx.unregisterPipeline(this)
-    } else {
-      throw new Error('unexpected message')
-    }
   }
 
   private async handlePubKeyPhase(content: {
@@ -578,8 +579,57 @@ class E2EEMessageReceiver implements MessageHandler {
       )
       // console.warn(`handle pubkey phase done!`)
       this.status = E2EEStatus.LISTEN_AES_KEY
+
+      // stop propagation
+      throw new StopProcessingException()
     } else {
       throw new Error('unexpected message')
+    }
+  }
+
+  private async handleAESKeyPhase(content: {
+    encryptedAESKey: {
+      data: Uint8Array
+      type: 'Buffer'
+    }
+    type: 'encrypted-aes-key'
+  }) {
+    if (content) {
+      await this.cipher.decryptAndSaveAESKey(
+        Uint8Array.from(content.encryptedAESKey.data).buffer
+      )
+      this.status = E2EEStatus.READY
+      // register e2ee sender
+      this.ctx.conversation.emit('e2ee-ready')
+      console.log('e2ee ready!')
+      this.ctx.registerPipeline(new E2EEMessageSender(), 'send')
+      // this.ctx.unregisterPipeline(this)
+      // stop propagation
+      throw new StopProcessingException()
+    } else {
+      throw new Error('unexpected message')
+    }
+  }
+
+  private async handleMessagePhase(content: {
+    secret: {
+      data: Uint8Array
+      type: 'Buffer'
+    }
+    iv: {
+      data: Uint8Array
+      type: 'Buffer'
+    }
+  }, o: Message) {
+    if (content) {
+      const decrypted = await this.cipher.decryptMessage(
+        Uint8Array.from(content.secret.data).buffer,
+        Uint8Array.from(content.iv.data)
+      )
+      // convert to string
+      const decryptedStr = new TextDecoder().decode(decrypted)
+      // rewrite message content
+      o.content = decryptedStr
     }
   }
 
@@ -589,13 +639,23 @@ class E2EEMessageReceiver implements MessageHandler {
 }
 
 class E2EEMessageSender implements MessageHandler {
-  pattern: (msg: Message) => boolean = (msg) => !!(msg.flag & MessageFlag.E2EE)
+  pattern: (msg: Message) => boolean = (msg) => {
+    console.log('e2ee message sender: ', msg)
+    return !!(msg.flag & MessageFlag.E2EE)
+  }
   handler: (msg: Message) => any = async (msg) => {
     if (!this.cipher.AESKeyReady()) {
       throw new Error('bob_aes is not ready')
     }
     //TODO check string or object
-    msg.content = await this.cipher.encryptMessage(msg.content as string)
+    if (typeof msg.content === 'object') {
+      msg.content = JSON.stringify(msg.content)
+    }
+    const iv = self.crypto.getRandomValues(new Uint8Array(12))
+    msg.content = {
+      secret: await this.cipher.encryptMessage(msg.content as string, iv),
+      iv
+    }
   }
   ctx: ConversationCtx
   passthrough?: boolean = true
