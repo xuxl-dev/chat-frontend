@@ -11,9 +11,14 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import groupStore from '@/store/modules/groupStore'
 
+const { filterByName } = groupStore()
 const search = ref('')
-function searchTheGroup() {}
+function searchTheGroup() {
+  filterByName(search.value)
+  console.log(search.value)
+}
 </script>
 
 <style scoped>

@@ -7,8 +7,8 @@
       <el-button type="primary" :icon="Plus" circle @click="addgroup()" />
     </div>
   </div>
-  <div>
-    <Group :group="group" v-for="(group, i) in groups" :key="i"></Group>
+  <div class="grpTable">
+    <Group :group="group" v-for="(group, i) in store.groups" :key="i"></Group>
   </div>
 </template>
 
@@ -21,7 +21,7 @@ import { Plus } from '@element-plus/icons-vue'
 
 function addgroup() {}
 
-const { groups, selectedGroup } = groupStore()
+const store = groupStore()
 </script>
 
 <style lang="scss">
@@ -54,5 +54,13 @@ const { groups, selectedGroup } = groupStore()
   width: 10%;
   height: 60px;
   display: inline-block;
+}
+
+.grpTable {
+  max-height: 88%;
+  overflow-y: scroll;
+  &::-webkit-scrollbar {
+    width: 0 !important;
+  }
 }
 </style>

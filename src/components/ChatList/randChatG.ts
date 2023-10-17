@@ -2,7 +2,7 @@ import { LoremIpsum } from "lorem-ipsum";
 import { MessageWarp } from "./ChatMessage";
 import { Message } from "./helpers/messageHelper";
 
-const lorem = new LoremIpsum({
+export const lorem = new LoremIpsum({
   sentencesPerParagraph: {
     max: 8,
     min: 4
@@ -29,7 +29,7 @@ export function randChat(count: number): MessageWarp[] {
       hasReadCount: randBetween(0, 2),
       flag: 4
     })
-    
+
     messages.push(MessageWarp.fromMessage(msg));
   }
   return messages;
