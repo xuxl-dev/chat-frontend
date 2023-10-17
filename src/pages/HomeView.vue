@@ -7,6 +7,7 @@ import { Db } from '@/utils/db';
 import Dexie from 'dexie';
 import { generateRSAKeyPair } from '../components/ChatList/helpers/cipher2';
 import { run } from '@/utils/pool';
+import { MessageFlag } from '../components/ChatList/helpers/messageHelper';
 
 const { bkm } = useChatStore()
 
@@ -19,6 +20,12 @@ const send = () => {
   const me = useChatStore().me
   const to = me.id === 1 ? 2 : 1
   getChatSession(to).send(new Message().from(me.id).text(msg.value))
+}
+
+const sendE2ee = () => {
+  const me = useChatStore().me
+  const to = me.id === 1 ? 2 : 1
+  getChatSession(to).send(new Message().from(me.id).text(msg.value).withFlag(MessageFlag.E2EE))
 }
 
 const switchUser = async () => {
@@ -55,6 +62,7 @@ const loadMore = async () => {
       <input type="text" v-model="msg" />
       <p>Current user:{{ useChatStore().me?.id }}</p>
       <button @click="send">send</button> <br>
+      <button @click="sendE2ee">sendE2ee</button> <br>
       <button @click="switchUser">switch user</button> <br>
       <button @click="console.log(getChatSession(useChatStore().me.id === 1 ? 2 : 1).getRawChat())">log chat</button> <br>
       <button @click="showDb">Show DB</button> <br>
