@@ -8,7 +8,7 @@ export function randBetween(min, max) {
  * @param ms
  */
 export async function timeout<T>(
-  funcFactory: () => (...args: any[]) => T | PromiseLike<T>,
+  funcFactory: (() => (...args: any[]) => T) | PromiseLike<T>,
   ms: number
 ) {
   return new Promise<T>(async (resolve, reject) => {
@@ -16,9 +16,14 @@ export async function timeout<T>(
       reject(new Error('timeout'))
     }, ms)
     try {
-      const func = funcFactory()
-      const result = await func()
-      resolve(result)
+      if (typeof funcFactory === 'function') {
+        const func = funcFactory()
+        const result = await func()
+        resolve(result)
+      } else {
+        const result = await funcFactory
+        resolve(result)
+      }
     } catch (error) {
       reject(error)
     }

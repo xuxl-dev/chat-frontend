@@ -539,11 +539,13 @@ class E2EEMessageReceiver implements MessageHandler {
   ])
 
   ctx: ConversationCtx
+
   pattern = (msg: Message) => {
     return (
       !!(msg.flag & MessageFlag.KEY_EXCHANGE) || !!(msg.flag & MessageFlag.E2EE)
     )
   }
+
   handler = async (msg: Message) => {
     await this.queue.add(async () => {
       // make sure the handler is executed in order
@@ -650,7 +652,7 @@ class E2EEMessageReceiver implements MessageHandler {
 
 class E2EEMessageSender implements MessageHandler {
   pattern: (msg: Message) => boolean = (msg) => {
-    console.log('e2ee message sender: ', msg)
+    // console.log('e2ee message sender: ', msg)
     return !!(msg.flag & MessageFlag.E2EE)
   }
   handler: (msg: Message) => any = async (msg) => {
@@ -774,12 +776,11 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
   cipher: Cipher2 = new Cipher2()
 
   public async init() {
-    return new Promise<void>((resolve, reject) => {
+    return timeout(new Promise<void>((resolve, reject) => {
       this.socket.connect()
       this.socket.on('connected', (o) => {
         this.user = o
         console.log('connected: ', o)
-        // this.notifyNewMessage = useChatStore().updateConversation //TODO: this is for test only, delete this
         useChatStore().me = o
         resolve()
       })
@@ -796,16 +797,14 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
       this.socket.on('message', (msg: Message) => {
         this.handleMessage(msg)
       })
-    })
+    }), 1000)
   }
-  // notifyNewMessage: (message: Message) => void
+
   private handleMessage(msg: Message) {
     if (!this.conversationMap.has(msg.senderId)) {
       this.newConversation(msg.senderId)
     }
-    // console.log('stack trace: ', new Error().stack)
     this.conversationMap.get(msg.senderId).notify(msg)
-    // this.notifyNewMessage(msg) //TODO: this is for test only, delete this
   }
 
   private newConversation(senderId: number) {
