@@ -16,7 +16,7 @@ export enum MessageFlag {
   'DO_NOT_STORE' = 1 << 0, // do not store this message in database, may fail to deliver
   'ACK' = 1 << 1, // this message is an ACK message
   'BROADCAST' = 1 << 2, // this message is a broadcast message
-  'E2EE' = 1 << 3, // this message is encrypted
+  'E2EE' = 1 << 3, // this message is encrypted //TODO this is redundant
   'KEY_EXCHANGE' = 1 << 4, // this message is a key exchange message
   'WITHDRAW' = 1 << 5, // this message is a withdraw message
   'COMPLEX' = 1 << 6, // this message is a complex message, the content is a nested message
