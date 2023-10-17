@@ -172,6 +172,7 @@ function findFlagsByValue(value: number): string[] {
   return flags
 }
 
+const messageToken = 'message'
 export class MessageHelper {
   server_addr: string
   port: number
@@ -228,7 +229,7 @@ export class MessageHelper {
     msg.content = JSON.stringify(content)
     msg.flag = msgFlag
     msg.senderId = this.user?.id
-    this._socket?.emit('message', msg)
+    this._socket?.emit(messageToken, msg)
   }
 
   subscribe(
