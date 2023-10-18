@@ -20,7 +20,7 @@ import { advancedDebounce } from '@/utils/debounce'
 const useChatStore = defineStore('chatStore', () => {
   const server = ref('http://localhost:3001')
   const token = ref(
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwidXNlcm5hbWUiOiJ1c2VyIiwicm9sZSI6InVzZXIiLCJpYXQiOjE2OTcwMzYwMDgsImV4cCI6MTY5OTYyODAwOH0.HVSRijOgxKTESZaTNeBYiLxC-CMqqrCHeMSe6uCjDuY'
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJhZG1pbiIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTY5NzUzMTY0NywiZXhwIjoxNjk3NzA0NDQ3fQ.nUs4iHm1pQLfgYeOHbxl-qTOY5MiUZxb5JcvympsVeg'
   )
   const bkm = new BakaMessager({
     server: server.value,
@@ -84,8 +84,11 @@ export class ChatSession extends EventEmitter {
    * this will not trigger update when new message comes
    */
   private chat = shallowReactive<Map<string, Ref<MessageWarp>>>(new Map())
-  mostEarlyMsgId: Ref<string | null> = ref(null)
-  mostLateMsgId: Ref<string | null> = ref(null)
+  // mostEarlyMsgId: Ref<string | null> = ref(null)
+  // mostLateMsgId: Ref<string | null> = ref(null)
+
+  earliestMsg: Ref<MessageWarp | null> = ref(null)
+  latestMsg: Ref<MessageWarp | null> = ref(null)
   isLoading = ref(false)
 
   processors: ProcessorLayer[] = [
@@ -140,6 +143,16 @@ export class ChatSession extends EventEmitter {
     this.emit('new-message', msgRef)
     this.chat.set(messageWarp.id, msgRef)
 
+    // update most early message, most late message
+    if (!this.earliestMsg.value || messageWarp._msg.sentAt < this.earliestMsg.value._msg.sentAt) {
+      this.earliestMsg.value = messageWarp
+      this.emit('update-earliest', this.earliestMsg)
+    }
+    if (!this.latestMsg.value || messageWarp._msg.sentAt > this.latestMsg.value._msg.sentAt) {
+      this.latestMsg.value = messageWarp
+      this.emit('update-latest', this.latestMsg)
+    }
+
     // the message here are these which owns a bubble, both sent and received
     // SyncMsg(messageWarp._msg)
     debounceSyncMsg(messageWarp._msg.msgId, messageWarp._msg)
@@ -176,28 +189,25 @@ export class ChatSession extends EventEmitter {
     return this.conversation.send(msg)
   }
 
-  async loadMore2() {
-    console.log('loading more2')
+  async loadMore() {
     this.isLoading.value = true
 
-    const msgs = await Db.instance().getMessageBetween2(
+    const msgs = await Db.instance().getMessageBetween(
       this.bindingGroup,
       useChatStore().me?.id ?? -1,
       new Date(0), // no lower bound
-      this.getMsgRef(this.mostEarlyMsgId.value ?? '')?.value._msg.sentAt ?? new Date(), //TODO test this
+      this.earliestMsg?.value._msg.sentAt ?? new Date(), //TODO test this
       5
     )
-    console.log('loadMore', msgs)
-
+    //TODO, if the loading time is too short, 
+    //the loading animation will not be shown, or it will be flashing
+    this.isLoading.value = false 
+    
     msgs.forEach((msg) => {
       this.setMsg(MessageWarp.fromDbMessage(msg))
     })
-
-
-    setTimeout(() => {
-      this.isLoading.value = false
-    }, 1000);
-
+    
+    console.log('loadMore', msgs)
     return msgs
   }
 

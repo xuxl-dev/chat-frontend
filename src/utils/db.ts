@@ -119,29 +119,7 @@ export class Db extends Dexie {
       .limit(limit)
       .sortBy('sentAt')
   }
-
-  public async getMessageBetween(
-    senderId: number,
-    receiverId: number,
-    from: Date,
-    to: Date,
-    pageSize: number = 100,
-    page: number = 0
-  ): Promise<ILocalMessage[]> {
-    console.log('getMessageBetween', senderId, receiverId, from, to, pageSize, page);
-    // from A to B or from B to A
-    return await this.chat
-      .where('[senderId+receiverId]')
-      .equals([senderId, receiverId])
-      .or('[senderId+receiverId]')
-      .equals([receiverId, senderId])
-      .filter((message) => message.sentAt >= from && message.sentAt <= to)
-      .reverse()
-      .offset(page * pageSize)
-      .limit(pageSize)
-      .sortBy('date');
-  }
-
+  
   /**
    * We use cursor to optimize the query
    * 
@@ -154,7 +132,7 @@ export class Db extends Dexie {
    * @param page 
    * @returns 
    */
-  public async getMessageBetween2(
+  public async getMessageBetween(
     senderId: number,
     receiverId: number,
     from: Date,
@@ -169,7 +147,7 @@ export class Db extends Dexie {
     const idxDB = this.backendDB()
     if (idxDB === null) { //this is maybe a bug of Dexie
       await new Promise((resolve) => setTimeout(resolve, 500))
-      return await this.getMessageBetween2(senderId, receiverId, from, to, limit)
+      return await this.getMessageBetween(senderId, receiverId, from, to, limit)
     }
 
     // get the store
