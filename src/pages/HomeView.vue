@@ -1,13 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import ChatList from '@/components/ChatList/index.vue';
-import { Message } from '@/components/ChatList/helpers/messageHelper';
 import useChatStore, { getChatSession } from '@/store/modules/chatStore';
 import { Db } from '@/utils/db';
 import Dexie from 'dexie';
-import { generateRSAKeyPair } from '../components/ChatList/helpers/cipher2';
-import { run } from '@/utils/pool';
-import { MessageFlag } from '../components/ChatList/helpers/messageHelper';
+import { Message, MessageFlag } from '../modules/advancedChat/base';
 
 const { bkm } = useChatStore()
 

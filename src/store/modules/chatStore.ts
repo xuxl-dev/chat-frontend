@@ -2,7 +2,6 @@ import { MessageWarp, User } from '@/components/ChatList/ChatMessage'
 import {
   BakaMessager,
   Conversation,
-  Message
 } from '@/components/ChatList/helpers/messageHelper'
 import { defineStore } from 'pinia'
 import { ref, shallowReactive, type Ref } from 'vue'
@@ -16,6 +15,7 @@ import { ACKUpdateLayer } from './ChatProcessors/ACKUpdateLayer'
 import EventEmitter from 'eventemitter3'
 import { Db, LocalMessage } from '@/utils/db'
 import { advancedDebounce } from '@/utils/debounce'
+import { Message } from '../../modules/advancedChat/base';
 
 const useChatStore = defineStore('chatStore', () => {
   const server = ref('http://localhost:3001')
@@ -46,10 +46,10 @@ export async function updateConversation(raw: Message) {
     sesses.set(raw.senderId, conversation)
   }
 }
-
+const db = Db.instance()
 const SyncMsg = async (msg: Message) => {
   try {
-    return await Db.instance().upsertMessage(new LocalMessage(msg))
+    return await db.upsertMessage(new LocalMessage(msg))
   } catch (e) {
     console.error(e)
   }
@@ -84,8 +84,8 @@ export class ChatSession extends EventEmitter {
    * this will not trigger update when new message comes
    */
   private chat = shallowReactive<Map<string, Ref<MessageWarp>>>(new Map())
-  mostEarlyMsgId: Ref<string | null> = ref(null)
-  mostLateMsgId: Ref<string | null> = ref(null)
+  mostEarlyMsgId = ref<string | null>(null)
+  mostLateMsgId = ref<string | null>(null)
   isLoading = ref(false)
 
   processors: ProcessorLayer[] = [

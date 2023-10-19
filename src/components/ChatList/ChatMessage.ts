@@ -1,7 +1,8 @@
 import type { Ref } from 'vue'
-import { ACKMsgType, getMessageStr, MessageFlag, Message } from './helpers/messageHelper'
+import { getMessageStr} from './helpers/messageHelper'
 import useChatStore, { debounceSyncMsg, getChatSession } from '@/store/modules/chatStore'
 import type { ILocalMessage } from '@/utils/db'
+import { Message, ACKMsgType, MessageFlag } from '../../modules/advancedChat/base';
 
 export class MessageWarp {
   static _id = 0

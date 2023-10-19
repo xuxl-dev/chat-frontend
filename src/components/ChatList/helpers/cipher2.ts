@@ -159,7 +159,7 @@ export class Cipher2 {
       encryptedAESKey,
       this.myRSAKeyPair.privateKey
     )
-    console.warn(`decryptedAESKey`, decryptedAESKey)
+    // console.warn(`decryptedAESKey`, decryptedAESKey)
     // convert ArrayBuffer to CryptoKey
     const aesKey = await self.crypto.subtle.importKey(
       'raw',
