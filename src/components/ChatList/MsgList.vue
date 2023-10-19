@@ -167,8 +167,8 @@ watch(() => props.channel, (newVal, oldVal) => {
     // }
     // source.value.push(reactive(new StackedMessage([warp])))
     insertMessage(warp.value)
-    currentSession.mostEarlyMsgId.value = firstStack()?.messages.at(0)?.value?.id ?? null
-    currentSession.mostLateMsgId.value = lastStack()?.messages.at(-1)?.value?.id ?? null
+    // currentSession.mostEarlyMsgId.value = firstStack()?.messages.at(0)?.value?.id ?? null
+    // currentSession.mostLateMsgId.value = lastStack()?.messages.at(-1)?.value?.id ?? null
   })
 
   oldVal && getChatSession(oldVal).off('new-message')

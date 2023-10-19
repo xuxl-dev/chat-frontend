@@ -13,6 +13,13 @@ const observer = new IntersectionObserver((entries) => {
   threshold: 0.1
 })
 
+/**
+ * we use a WeakMap here to avoid memory leaks
+ * if we would use a normal Map, the map would keep a reference to the element
+ * and the element would never be garbage collected
+ * the WeakMap only keeps a weak reference to the element
+ * so the element can be garbage collected
+ */
 const map = new WeakMap()
 
 export default {

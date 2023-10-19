@@ -26,7 +26,7 @@ const sendE2ee = () => {
 }
 
 const switchUser = async () => {
-  bkm.switchUser(`eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJhZG1pbiIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTY5NzAzNTk1MiwiZXhwIjoxNjk5NjI3OTUyfQ.-PG_PGdZJTtpTjMgHmtQOW8g_oOdlOk1Q8neR0q-4Ns`)
+  bkm.switchUser(`eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwidXNlcm5hbWUiOiJ1c2VyIiwicm9sZSI6InVzZXIiLCJpYXQiOjE2OTc1MzE3NzksImV4cCI6MTY5NzcwNDU3OX0.aFk1uV7qYYAdbCTmbtG5E-MGESgrky5rHxvFk-jjdfY`)
   await bkm.init()
 }
 
