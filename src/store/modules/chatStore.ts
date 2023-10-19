@@ -26,7 +26,7 @@ import { generateUUID } from '@/utils/utils'
 const useChatStore = defineStore('chatStore', () => {
   const server = ref('http://localhost:3001')
   const token = ref(
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJhZG1pbiIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTY5NzUzMTY0NywiZXhwIjoxNjk3NzA0NDQ3fQ.nUs4iHm1pQLfgYeOHbxl-qTOY5MiUZxb5JcvympsVeg'
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJhZG1pbiIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTY5NzcyNjcxNywiZXhwIjoxNzAwMzE4NzE3fQ.yTkFWrcfTachD0mL1QYYpKz82sSHq2eIjyKVVX7KxDs'
   )
   const bkm = new BakaMessager({
     server: server.value,
