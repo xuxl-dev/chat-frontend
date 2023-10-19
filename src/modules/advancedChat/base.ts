@@ -14,7 +14,8 @@ export enum MessageFlag {
   WITHDRAW = 1 << 5, // this message is a withdraw message
   COMPLEX = 1 << 6, // this message is a complex message, the content is a nested message
   PRESAVED_RSA = 1 << 7, //use presaved RSA key to encrypt (the target user must have a presaved RSA key)
-  HEARTBEAT = 1 << 8 // this message is a heartbeat message
+  FUNCTIONAL = 1 << 8, // this message is a functional message (i.e. heartbeat)
+  DO_NOT_ACK = 1 << 9 // this message should not be acked
 }
 
 export function isFlagSet(flag: number, message: Message) {
@@ -59,7 +60,7 @@ export class Message implements IMessage {
     senderId?: number
     receiverId?: number
     content?: string | object
-    sentAt?: Date
+    sentAt?: Date | string
     hasReadCount?: number
     flag?: number
   }) {
@@ -103,6 +104,9 @@ export class Message implements IMessage {
     msg.content = object.content
     msg.flag = object.flag
     msg.senderId = object.senderId
+    msg.sentAt = typeof object.sentAt === 'string' ? new Date(object.sentAt) : object.sentAt
+    msg.msgId = object.msgId
+
     return msg
   }
 

@@ -1,10 +1,15 @@
 import { Socket, io } from 'socket.io-client'
 import EventEmitter from 'eventemitter3'
 import useChatStore, { updateConversation } from '@/store/modules/chatStore'
-import { randBetween, timeout } from '@/utils/utils'
+import { timeout } from '@/utils/utils'
 import { Cipher2 } from './cipher2'
 import PQueue from 'p-queue'
-import { ACKMsgType, Message, MessageFlag } from '../../../modules/advancedChat/base';
+import {
+  ACKMsgType,
+  Message,
+  MessageFlag,
+  isFlagSet
+} from '../../../modules/advancedChat/base'
 
 export function getMessageStr(msg: Message) {
   //this is dirty
@@ -485,16 +490,19 @@ class E2EEMessageReceiver implements MessageHandler {
     }
   }
 
-  private async handleMessagePhase(content: {
-    secret: {
-      data: Uint8Array
-      type: 'Buffer'
-    }
-    iv: {
-      data: Uint8Array
-      type: 'Buffer'
-    }
-  }, o: Message) {
+  private async handleMessagePhase(
+    content: {
+      secret: {
+        data: Uint8Array
+        type: 'Buffer'
+      }
+      iv: {
+        data: Uint8Array
+        type: 'Buffer'
+      }
+    },
+    o: Message
+  ) {
     if (content) {
       const decrypted = await this.cipher.decryptMessage(
         Uint8Array.from(content.secret.data).buffer,
@@ -542,11 +550,15 @@ class E2EEMessageSender implements MessageHandler {
 /**
  * this handler will send ACK for non-ACK message
  */
-class MessageReceiver implements MessageHandler {
+class ACKEchoBackReceiver implements MessageHandler {
   pattern: (msg: Message) => boolean = (msg) => {
     return !(msg.flag & MessageFlag.ACK)
   }
   handler: (msg: Message) => any = async (msg) => {
+    if (isFlagSet(MessageFlag.ACK, msg) || isFlagSet(MessageFlag.DO_NOT_ACK, msg)) {
+      // this is an ACK message, do nothing
+      return
+    }
     await this.ctx.sendMessage(
       {
         ackMsgId: msg.msgId,
@@ -562,7 +574,7 @@ class MessageReceiver implements MessageHandler {
 
 const defaultPipeline = {
   send: [],
-  receive: [MessageReceiver, E2EEMessageReceiver]
+  receive: [ACKEchoBackReceiver, E2EEMessageReceiver]
 }
 
 function InjectDefaultPipeline(conversation: Conversation) {
@@ -638,28 +650,32 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
   cipher: Cipher2 = new Cipher2()
 
   public async init() {
-    return timeout(new Promise<void>((resolve, reject) => {
-      this.socket.connect()
-      this.socket.on('connected', (o) => {
-        this.user = o
-        console.log('connected: ', o)
-        useChatStore().me = o
-        resolve()
-      })
+    return timeout(
+      new Promise<void>((resolve, reject) => {
+        this.socket.connect()
+        this.socket.on('connected', (o) => {
+          this.user = o
+          console.log('connected: ', o)
+          useChatStore().me = o
+          resolve()
+        })
 
-      this.socket.on('connect_error', (error) => {
-        console.error('Connection error:', error.message)
-        reject(error)
-      })
+        this.socket.on('connect_error', (error) => {
+          console.error('Connection error:', error.message)
+          reject(error)
+        })
 
-      this.socket.on('disconnect', (reason) => {
-        console.log('disconnected', reason)
-      })
+        this.socket.on('disconnect', (reason) => {
+          console.log('disconnected', reason)
+        })
 
-      this.socket.on('message', (msg: Message) => {
-        this.handleMessage(msg)
-      })
-    }), 1000)
+        this.socket.on('message', (msg: object) => {
+          const parsed = Message.parse(msg)
+          this.handleMessage(parsed)
+        })
+      }),
+      1000
+    )
   }
 
   private handleMessage(msg: Message) {

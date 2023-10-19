@@ -33,7 +33,8 @@ import { type Ref, computed } from 'vue'
 import { MessageWarp, StackedMessage, User } from './ChatMessage';
 import MessageItem from './MessageItem.vue';
 import useChatStore from '@/store/modules/chatStore';
-import { ACKMsgType } from './helpers/messageHelper';
+import { ACKMsgType } from '@/modules/advancedChat/base';
+
 
 const props = defineProps({
   source: {

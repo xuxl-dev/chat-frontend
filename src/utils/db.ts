@@ -1,8 +1,6 @@
+import type { IMessage, Message } from '@/modules/advancedChat/base'
 import Dexie, { type Table, type TransactionMode } from 'dexie'
-import {
-  Message,
-  type IMessage
-} from '@/components/ChatList/helpers/messageHelper'
+
 
 export interface ILocalMessage extends IMessage {
 }

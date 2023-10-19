@@ -65,7 +65,8 @@ const loadMore = async () => {
       <button @click="showDb">Show DB</button> <br>
       <button @click="clearDB">Clear DB</button> <br>
       <button @click="loadMore">loadMore</button> <br>
-      <button @click="establishE2ee">E2EE</button>
+      <button @click="establishE2ee">E2EE</button> <br>
+      <button @click="getChatSession(useChatStore().me.id === 1 ? 2 : 1).heartBeat()">HeartBeat</button> <br>
     </div>
   </main>
 </template>

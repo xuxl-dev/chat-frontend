@@ -1,4 +1,4 @@
-import { Message } from '@/components/ChatList/helpers/messageHelper';
+import { Message } from '../../../modules/advancedChat/base';
 interface DispatcherCtx {}
 
 export interface ProcessorLayer {

@@ -9,8 +9,11 @@ export class MessageWarp {
   tid: number = MessageWarp._id++
   group: boolean
   showAvatar: boolean
-
+  store = useChatStore()
   _msg: Message
+
+  // for debug, wont send ack or update db
+  _dont_track: boolean = false
 
   private constructor() { }
 
@@ -27,7 +30,8 @@ export class MessageWarp {
   }
 
   get senderId(): number {
-    return this._msg.senderId
+    // if undefined, override with me.id
+    return this._msg.senderId ?? this.store.me.id
   }
 
   get sentAt(): Date {
@@ -74,6 +78,9 @@ export class MessageWarp {
    * @param type 
    */
   updateAck(type: ACKMsgType) {
+    if (this._dont_track) {
+      return
+    }
     if (type === ACKMsgType.READ) {
       if (this._msg.hasReadCount > 0) {
         this._msg.hasReadCount += 1
@@ -94,6 +101,9 @@ export class MessageWarp {
    * @param type 
    */
   ack(type: ACKMsgType = ACKMsgType.READ) {
+    if (this._dont_track) {
+      return
+    }
     getChatSession(this.senderId).sendRawQuick(
       {
         ackMsgId: this.id,
@@ -101,6 +111,11 @@ export class MessageWarp {
       },
       MessageFlag.ACK
     )
+  }
+
+  noTrack() {
+    this._dont_track = true
+    return this
   }
 }
 

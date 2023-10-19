@@ -1,7 +1,7 @@
 import { MessageWarp, User } from '@/components/ChatList/ChatMessage'
 import {
   BakaMessager,
-  Conversation,
+  Conversation
 } from '@/components/ChatList/helpers/messageHelper'
 import { defineStore } from 'pinia'
 import { ref, shallowReactive, type Ref } from 'vue'
@@ -15,7 +15,13 @@ import { ACKUpdateLayer } from './ChatProcessors/ACKUpdateLayer'
 import EventEmitter from 'eventemitter3'
 import { Db, LocalMessage } from '@/utils/db'
 import { advancedDebounce } from '@/utils/debounce'
-import { Message } from '../../modules/advancedChat/base';
+import { Message } from '../../modules/advancedChat/base'
+import {
+  FunctionalLayer,
+  registerFunctionalCb
+} from './ChatProcessors/FunctionalLayer'
+import { HeartBeatMsg } from '@/modules/advancedChat/decls/heartbeat'
+import { generateUUID } from '@/utils/utils'
 
 const useChatStore = defineStore('chatStore', () => {
   const server = ref('http://localhost:3001')
@@ -90,6 +96,7 @@ export class ChatSession extends EventEmitter {
 
   processors: ProcessorLayer[] = [
     BeginProcessorLayer.instance,
+    FunctionalLayer.instance,
     ACKUpdateLayer.instance,
     EndProcessorLayer.instance
   ]
@@ -102,8 +109,8 @@ export class ChatSession extends EventEmitter {
 
   /**
    * new incoming message
-   * @param msg 
-   * @returns 
+   * @param msg
+   * @returns
    */
   async notify(msg: Message | Readonly<Message>) {
     try {
@@ -149,7 +156,7 @@ export class ChatSession extends EventEmitter {
     return this.chat.get(id)
   }
 
-  async send(msg: Message) {
+  async send(msg: Message, transform?: (warp: MessageWarp)=> MessageWarp) {
     const msg_copy = msg.clone()
     const sentMsgAck = await this.conversation.send(msg)
 
@@ -158,6 +165,7 @@ export class ChatSession extends EventEmitter {
     // but we need to keep the original message, so we clone it
     msg_copy.msgId = (sentMsgAck as any).content.ackMsgId
     const warp = MessageWarp.fromMessage(msg_copy)
+    transform?.(warp)
     this.setMsg(warp)
     return msg
   }
@@ -176,7 +184,7 @@ export class ChatSession extends EventEmitter {
     return this.conversation.send(msg)
   }
 
-  async loadMore2() {
+  async loadMore() {
     console.log('loading more2')
     this.isLoading.value = true
 
@@ -184,7 +192,8 @@ export class ChatSession extends EventEmitter {
       this.bindingGroup,
       useChatStore().me?.id ?? -1,
       new Date(0), // no lower bound
-      this.getMsgRef(this.mostEarlyMsgId.value ?? '')?.value._msg.sentAt ?? new Date(), //TODO test this
+      this.getMsgRef(this.mostEarlyMsgId.value ?? '')?.value._msg.sentAt ??
+        new Date(), //TODO test this
       5
     )
     console.log('loadMore', msgs)
@@ -193,12 +202,33 @@ export class ChatSession extends EventEmitter {
       this.setMsg(MessageWarp.fromDbMessage(msg))
     })
 
-
     setTimeout(() => {
       this.isLoading.value = false
-    }, 1000);
+    }, 1000)
 
     return msgs
+  }
+
+  async heartBeat() {
+    const evt_uuid = 'HEARTBEAT'
+    const msg = new Message(
+      HeartBeatMsg.new({
+        receiverId: this.bindingGroup,
+        content: {
+          message: 'Genshin Impact?',
+          type: 'PING'
+        },
+        evt_uuid
+      })
+    )
+    this.send(msg, (o)=> o.noTrack())
+    console.log(`sent heart beat`, msg)
+    const ret = await registerFunctionalCb(evt_uuid, async (msg) => {
+      const content = HeartBeatMsg.peel(msg)
+      return content
+    })
+    console.log('heartBeat', ret)
+    return ret
   }
 
   /**

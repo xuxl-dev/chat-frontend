@@ -193,7 +193,7 @@ const onTopHit = async () => {
   const scr = virtualListRef.value
   const szPre = scr.getScrollSize()
   const offset = scr.getOffset()
-  const res = await currentSession?.loadMore2()
+  const res = await currentSession?.loadMore()
   const szPost = scr.getScrollSize()
   const newOffset = offset + (szPost - szPre)
   console.log(`offset: ${offset}, szPre: ${szPre}, szPost: ${szPost}, newOffset: ${newOffset}`)
