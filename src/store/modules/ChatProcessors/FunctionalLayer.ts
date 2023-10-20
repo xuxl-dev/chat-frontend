@@ -7,6 +7,8 @@ import {
 } from '../../../modules/advancedChat/base'
 import { getChatSession } from '../chatStore'
 import { HeartBeatMsg } from '@/modules/advancedChat/decls/heartbeat'
+import bus from '@/utils/EventBus'
+import { z } from 'zod'
 
 export class FunctionalLayer extends ProcessorBase {
   private static _instance = new FunctionalLayer()
@@ -68,18 +70,36 @@ export class FunctionalLayer extends ProcessorBase {
   }
 }
 
+const safeEmitScheme = z.object(
+  {
+    evt: z.string(),
+    content: z.any()
+  },
+)
+
 const constant_events = {
   HEARTBEAT: {
     once: false,
     cb: async (msg: Message) => {
-      await getChatSession(msg.senderId).sendRaw(new Message(HeartBeatMsg.new({
-        receiverId: msg.senderId,
-        content: {
-          message: 'Launch!',
-          type: 'PONG'
-        },
-        evt_uuid: (msg.content as any).evt_uuid
-      })))
+      await getChatSession(msg.senderId).sendRaw(
+        new Message(
+          HeartBeatMsg.new({
+            receiverId: msg.senderId,
+            content: {
+              message: 'Launch!',
+              type: 'PONG'
+            },
+            evt_uuid: (msg.content as any).evt_uuid
+          })
+        )
+      )
+    }
+  },
+  SAFEEMIT: {
+    once: false,
+    cb: async (msg: Message) => {
+      const {evt, content} = safeEmitScheme.parse(msg.content)
+      bus.emit(evt, content)
     }
   }
 }

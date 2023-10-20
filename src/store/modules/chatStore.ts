@@ -52,7 +52,9 @@ export async function updateConversation(raw: Message) {
     sesses.set(raw.senderId, conversation)
   }
 }
+
 const db = Db.instance()
+
 const SyncMsg = async (msg: Message) => {
   try {
     return await db.upsertMessage(new LocalMessage(msg))
