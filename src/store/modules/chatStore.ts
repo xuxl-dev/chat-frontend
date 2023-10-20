@@ -1,8 +1,7 @@
 import { MessageWarp, User } from '@/components/ChatList/ChatMessage'
 import {
   BakaMessager,
-  Conversation,
-  Message
+  Conversation
 } from '@/components/ChatList/helpers/messageHelper'
 import { defineStore } from 'pinia'
 import { ref, shallowReactive, type Ref } from 'vue'
@@ -16,11 +15,18 @@ import { ACKUpdateLayer } from './ChatProcessors/ACKUpdateLayer'
 import EventEmitter from 'eventemitter3'
 import { Db, LocalMessage } from '@/utils/db'
 import { advancedDebounce } from '@/utils/debounce'
+import { Message } from '../../modules/advancedChat/base'
+import {
+  FunctionalLayer,
+  registerFunctionalCb
+} from './ChatProcessors/FunctionalLayer'
+import { HeartBeatMsg } from '@/modules/advancedChat/decls/heartbeat'
+import { generateUUID } from '@/utils/utils'
 
 const useChatStore = defineStore('chatStore', () => {
   const server = ref('http://localhost:3001')
   const token = ref(
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwidXNlcm5hbWUiOiJ1c2VyIiwicm9sZSI6InVzZXIiLCJpYXQiOjE2OTcwMzYwMDgsImV4cCI6MTY5OTYyODAwOH0.HVSRijOgxKTESZaTNeBYiLxC-CMqqrCHeMSe6uCjDuY'
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJhZG1pbiIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTY5NzcyNjcxNywiZXhwIjoxNzAwMzE4NzE3fQ.yTkFWrcfTachD0mL1QYYpKz82sSHq2eIjyKVVX7KxDs'
   )
   const bkm = new BakaMessager({
     server: server.value,
@@ -47,9 +53,11 @@ export async function updateConversation(raw: Message) {
   }
 }
 
+const db = Db.instance()
+
 const SyncMsg = async (msg: Message) => {
   try {
-    return await Db.instance().upsertMessage(new LocalMessage(msg))
+    return await db.upsertMessage(new LocalMessage(msg))
   } catch (e) {
     console.error(e)
   }
@@ -84,12 +92,16 @@ export class ChatSession extends EventEmitter {
    * this will not trigger update when new message comes
    */
   private chat = shallowReactive<Map<string, Ref<MessageWarp>>>(new Map())
-  mostEarlyMsgId: Ref<string | null> = ref(null)
-  mostLateMsgId: Ref<string | null> = ref(null)
+  // mostEarlyMsgId: Ref<string | null> = ref(null)
+  // mostLateMsgId: Ref<string | null> = ref(null)
+
+  earliestMsg: Ref<MessageWarp | null> = ref(null)
+  latestMsg: Ref<MessageWarp | null> = ref(null)
   isLoading = ref(false)
 
   processors: ProcessorLayer[] = [
     BeginProcessorLayer.instance,
+    FunctionalLayer.instance,
     ACKUpdateLayer.instance,
     EndProcessorLayer.instance
   ]
@@ -102,8 +114,8 @@ export class ChatSession extends EventEmitter {
 
   /**
    * new incoming message
-   * @param msg 
-   * @returns 
+   * @param msg
+   * @returns
    */
   async notify(msg: Message | Readonly<Message>) {
     try {
@@ -140,6 +152,16 @@ export class ChatSession extends EventEmitter {
     this.emit('new-message', msgRef)
     this.chat.set(messageWarp.id, msgRef)
 
+    // update most early message, most late message
+    if (!this.earliestMsg.value || messageWarp._msg.sentAt < this.earliestMsg.value._msg.sentAt) {
+      this.earliestMsg.value = messageWarp
+      this.emit('update-earliest', this.earliestMsg)
+    }
+    if (!this.latestMsg.value || messageWarp._msg.sentAt > this.latestMsg.value._msg.sentAt) {
+      this.latestMsg.value = messageWarp
+      this.emit('update-latest', this.latestMsg)
+    }
+
     // the message here are these which owns a bubble, both sent and received
     // SyncMsg(messageWarp._msg)
     debounceSyncMsg(messageWarp._msg.msgId, messageWarp._msg)
@@ -149,7 +171,7 @@ export class ChatSession extends EventEmitter {
     return this.chat.get(id)
   }
 
-  async send(msg: Message) {
+  async send(msg: Message, transform?: (warp: MessageWarp)=> MessageWarp) {
     const msg_copy = msg.clone()
     const sentMsgAck = await this.conversation.send(msg)
 
@@ -158,6 +180,7 @@ export class ChatSession extends EventEmitter {
     // but we need to keep the original message, so we clone it
     msg_copy.msgId = (sentMsgAck as any).content.ackMsgId
     const warp = MessageWarp.fromMessage(msg_copy)
+    transform?.(warp)
     this.setMsg(warp)
     return msg
   }
@@ -176,29 +199,48 @@ export class ChatSession extends EventEmitter {
     return this.conversation.send(msg)
   }
 
-  async loadMore2() {
-    console.log('loading more2')
+  async loadMore() {
     this.isLoading.value = true
 
-    const msgs = await Db.instance().getMessageBetween2(
+    const msgs = await Db.instance().getMessageBetween(
       this.bindingGroup,
       useChatStore().me?.id ?? -1,
       new Date(0), // no lower bound
-      this.getMsgRef(this.mostEarlyMsgId.value ?? '')?.value._msg.sentAt ?? new Date(), //TODO test this
+      this.earliestMsg?.value._msg.sentAt ?? new Date(), //TODO test this
       5
     )
-    console.log('loadMore', msgs)
-
+    //TODO, if the loading time is too short, 
+    //the loading animation will not be shown, or it will be flashing
+    this.isLoading.value = false 
+    
     msgs.forEach((msg) => {
       this.setMsg(MessageWarp.fromDbMessage(msg))
     })
-
-
-    setTimeout(() => {
-      this.isLoading.value = false
-    }, 1000);
-
+    
+    console.log('loadMore', msgs)
     return msgs
+  }
+
+  async heartBeat() {
+    const evt_uuid = 'HEARTBEAT'
+    const msg = new Message(
+      HeartBeatMsg.new({
+        receiverId: this.bindingGroup,
+        content: {
+          message: 'Genshin Impact?',
+          type: 'PING'
+        },
+        evt_uuid
+      })
+    )
+    this.send(msg, (o)=> o.noTrack())
+    console.log(`sent heart beat`, msg)
+    const ret = await registerFunctionalCb(evt_uuid, async (msg) => {
+      const content = HeartBeatMsg.peel(msg)
+      return content
+    })
+    console.log('heartBeat', ret)
+    return ret
   }
 
   /**

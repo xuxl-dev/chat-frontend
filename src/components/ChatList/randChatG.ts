@@ -1,6 +1,6 @@
 import { LoremIpsum } from "lorem-ipsum";
 import { MessageWarp } from "./ChatMessage";
-import { Message } from "./helpers/messageHelper";
+import { Message } from '../../modules/advancedChat/base';
 
 const lorem = new LoremIpsum({
   sentencesPerParagraph: {

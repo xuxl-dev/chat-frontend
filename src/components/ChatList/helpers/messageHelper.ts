@@ -1,150 +1,16 @@
 import { Socket, io } from 'socket.io-client'
 import EventEmitter from 'eventemitter3'
 import useChatStore, { updateConversation } from '@/store/modules/chatStore'
-import { randBetween, timeout } from '@/utils/utils'
+import { timeout } from '@/utils/utils'
 import { Cipher2 } from './cipher2'
 import PQueue from 'p-queue'
+import {
+  ACKMsgType,
+  Message,
+  MessageFlag,
+  isFlagSet
+} from '../../../modules/advancedChat/base'
 
-export class CreateMessageDto {
-  receiverId!: number
-  content!: string | object
-  flag!: MessageFlag
-}
-
-export enum MessageFlag {
-  'NONE' = 0,
-  'DO_NOT_STORE' = 1 << 0, // do not store this message in database, may fail to deliver
-  'ACK' = 1 << 1, // this message is an ACK message
-  'BROADCAST' = 1 << 2, // this message is a broadcast message
-  'E2EE' = 1 << 3, // this message is encrypted //TODO this is redundant
-  'KEY_EXCHANGE' = 1 << 4, // this message is a key exchange message
-  'WITHDRAW' = 1 << 5, // this message is a withdraw message
-  'COMPLEX' = 1 << 6, // this message is a complex message, the content is a nested message
-  'PRESAVED_RSA' = 1 << 7 //use presaved RSA key to encrypt (the target user must have a presaved RSA key)
-  //...
-}
-
-export function isFlagSet(flag: number, message: Message) {
-  return !!(message.flag & flag)
-}
-
-export enum ACKMsgType {
-  'DELIVERED',
-  'RECEIVED',
-  'READ'
-}
-
-export type MsgId = string
-
-export interface IMessage {
-  msgId?: MsgId
-  senderId: number
-  receiverId: number
-  content: string | { [key: string]: any }
-  sentAt: Date
-  hasReadCount?: number
-  flag: number
-}
-
-export class Message implements IMessage {
-  msgId?: MsgId
-
-  senderId: number
-
-  receiverId: number
-
-  content: string | { [key: string]: any }
-
-  sentAt: Date = new Date()
-
-  hasReadCount?: number
-
-  flag: number = MessageFlag.NONE
-
-  constructor(config?: {
-    msgId?: MsgId
-    senderId?: number
-    receiverId?: number
-    content?: string | object
-    sentAt?: Date
-    hasReadCount?: number
-    flag?: number
-  }) {
-    if (config) {
-      this.msgId = config.msgId
-      this.senderId = config.senderId
-      this.receiverId = config.receiverId
-      this.content = config.content
-      this.sentAt =
-        typeof config.sentAt === 'string'
-          ? new Date(config.sentAt)
-          : config.sentAt
-      this.hasReadCount = config.hasReadCount
-      this.flag = config.flag
-    }
-  }
-
-  static ACK(toMessage: Message, type: ACKMsgType) {
-    const msg = new Message()
-    msg.flag = MessageFlag.ACK
-    msg.content = {
-      ackMsgId: toMessage.msgId.toString(),
-      type
-    }
-    msg.receiverId = toMessage.senderId
-    msg.senderId = toMessage.receiverId
-    return msg
-  }
-
-  static new(createMessageDto: CreateMessageDto) {
-    const msg = new Message()
-    msg.receiverId = createMessageDto.receiverId
-    msg.content = createMessageDto.content
-    msg.flag = createMessageDto.flag
-    return msg
-  }
-
-  static parse(object) {
-    const msg = new Message()
-    msg.receiverId = object.receiverId
-    msg.content = object.content
-    msg.flag = object.flag
-    msg.senderId = object.senderId
-    return msg
-  }
-
-  text(str: string) {
-    this.content = str
-    return this
-  }
-
-  to(receiverId: number) {
-    this.receiverId = receiverId
-    return this
-  }
-
-  from(senderId: number) {
-    this.senderId = senderId
-    return this
-  }
-
-  withFlag(flag: number) {
-    this.flag = flag
-    return this
-  }
-
-  clone() {
-    return new Message({
-      msgId: this.msgId,
-      senderId: this.senderId,
-      receiverId: this.receiverId,
-      content: this.content,
-      sentAt: this.sentAt,
-      hasReadCount: this.hasReadCount,
-      flag: this.flag
-    })
-  }
-}
 export function getMessageStr(msg: Message) {
   //this is dirty
   return `${findFlagsByValue(msg.flag).join('|')}\n ${msg.senderId} -> ${
@@ -624,16 +490,19 @@ class E2EEMessageReceiver implements MessageHandler {
     }
   }
 
-  private async handleMessagePhase(content: {
-    secret: {
-      data: Uint8Array
-      type: 'Buffer'
-    }
-    iv: {
-      data: Uint8Array
-      type: 'Buffer'
-    }
-  }, o: Message) {
+  private async handleMessagePhase(
+    content: {
+      secret: {
+        data: Uint8Array
+        type: 'Buffer'
+      }
+      iv: {
+        data: Uint8Array
+        type: 'Buffer'
+      }
+    },
+    o: Message
+  ) {
     if (content) {
       const decrypted = await this.cipher.decryptMessage(
         Uint8Array.from(content.secret.data).buffer,
@@ -681,11 +550,15 @@ class E2EEMessageSender implements MessageHandler {
 /**
  * this handler will send ACK for non-ACK message
  */
-class MessageReceiver implements MessageHandler {
+class ACKEchoBackReceiver implements MessageHandler {
   pattern: (msg: Message) => boolean = (msg) => {
     return !(msg.flag & MessageFlag.ACK)
   }
   handler: (msg: Message) => any = async (msg) => {
+    if (isFlagSet(MessageFlag.ACK, msg) || isFlagSet(MessageFlag.DO_NOT_ACK, msg)) {
+      // this is an ACK message, do nothing
+      return
+    }
     await this.ctx.sendMessage(
       {
         ackMsgId: msg.msgId,
@@ -701,7 +574,7 @@ class MessageReceiver implements MessageHandler {
 
 const defaultPipeline = {
   send: [],
-  receive: [MessageReceiver, E2EEMessageReceiver]
+  receive: [ACKEchoBackReceiver, E2EEMessageReceiver]
 }
 
 function InjectDefaultPipeline(conversation: Conversation) {
@@ -777,28 +650,32 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
   cipher: Cipher2 = new Cipher2()
 
   public async init() {
-    return timeout(new Promise<void>((resolve, reject) => {
-      this.socket.connect()
-      this.socket.on('connected', (o) => {
-        this.user = o
-        console.log('connected: ', o)
-        useChatStore().me = o
-        resolve()
-      })
+    return timeout(
+      new Promise<void>((resolve, reject) => {
+        this.socket.connect()
+        this.socket.on('connected', (o) => {
+          this.user = o
+          console.log('connected: ', o)
+          useChatStore().me = o
+          resolve()
+        })
 
-      this.socket.on('connect_error', (error) => {
-        console.error('Connection error:', error.message)
-        reject(error)
-      })
+        this.socket.on('connect_error', (error) => {
+          console.error('Connection error:', error.message)
+          reject(error)
+        })
 
-      this.socket.on('disconnect', (reason) => {
-        console.log('disconnected', reason)
-      })
+        this.socket.on('disconnect', (reason) => {
+          console.log('disconnected', reason)
+        })
 
-      this.socket.on('message', (msg: Message) => {
-        this.handleMessage(msg)
-      })
-    }), 1000)
+        this.socket.on('message', (msg: object) => {
+          const parsed = Message.parse(msg)
+          this.handleMessage(parsed)
+        })
+      }),
+      1000
+    )
   }
 
   private handleMessage(msg: Message) {

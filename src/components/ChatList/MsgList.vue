@@ -167,8 +167,8 @@ watch(() => props.channel, (newVal, oldVal) => {
     // }
     // source.value.push(reactive(new StackedMessage([warp])))
     insertMessage(warp.value)
-    currentSession.mostEarlyMsgId.value = firstStack()?.messages.at(0)?.value?.id ?? null
-    currentSession.mostLateMsgId.value = lastStack()?.messages.at(-1)?.value?.id ?? null
+    // currentSession.mostEarlyMsgId.value = firstStack()?.messages.at(0)?.value?.id ?? null
+    // currentSession.mostLateMsgId.value = lastStack()?.messages.at(-1)?.value?.id ?? null
   })
 
   oldVal && getChatSession(oldVal).off('new-message')
@@ -193,7 +193,7 @@ const onTopHit = async () => {
   const scr = virtualListRef.value
   const szPre = scr.getScrollSize()
   const offset = scr.getOffset()
-  const res = await currentSession?.loadMore2()
+  const res = await currentSession?.loadMore()
   const szPost = scr.getScrollSize()
   const newOffset = offset + (szPost - szPre)
   console.log(`offset: ${offset}, szPre: ${szPre}, szPost: ${szPost}, newOffset: ${newOffset}`)

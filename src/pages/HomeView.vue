@@ -1,13 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import ChatList from '@/components/ChatList/index.vue';
-import { Message } from '@/components/ChatList/helpers/messageHelper';
 import useChatStore, { getChatSession } from '@/store/modules/chatStore';
 import { Db } from '@/utils/db';
 import Dexie from 'dexie';
-import { generateRSAKeyPair } from '../components/ChatList/helpers/cipher2';
-import { run } from '@/utils/pool';
-import { MessageFlag } from '../components/ChatList/helpers/messageHelper';
+import { Message, MessageFlag } from '../modules/advancedChat/base';
 
 const { bkm } = useChatStore()
 
@@ -29,7 +26,7 @@ const sendE2ee = () => {
 }
 
 const switchUser = async () => {
-  bkm.switchUser(`eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJhZG1pbiIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTY5NzAzNTk1MiwiZXhwIjoxNjk5NjI3OTUyfQ.-PG_PGdZJTtpTjMgHmtQOW8g_oOdlOk1Q8neR0q-4Ns`)
+  bkm.switchUser(`eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwidXNlcm5hbWUiOiJ1c2VyIiwicm9sZSI6InVzZXIiLCJpYXQiOjE2OTc3MjY2NTMsImV4cCI6MTcwMDMxODY1M30.MQ7A6aiLxZt9a-QkyvJrt_eIpEBcfVzzBnCgGWT3Ag8`)
   await bkm.init()
 }
 
@@ -68,7 +65,8 @@ const loadMore = async () => {
       <button @click="showDb">Show DB</button> <br>
       <button @click="clearDB">Clear DB</button> <br>
       <button @click="loadMore">loadMore</button> <br>
-      <button @click="establishE2ee">E2EE</button>
+      <button @click="establishE2ee">E2EE</button> <br>
+      <button @click="getChatSession(useChatStore().me.id === 1 ? 2 : 1).heartBeat()">HeartBeat</button> <br>
     </div>
   </main>
 </template>

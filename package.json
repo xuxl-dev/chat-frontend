@@ -33,7 +33,8 @@
     "vue-router": "^4.2.5",
     "vue-sticky-directive": "^0.0.10",
     "vue-virtual-scroller": "2.0.0-beta.8",
-    "workerpool": "^6.5.0"
+    "workerpool": "^6.5.0",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@tsconfig/node18": "^2.0.1",

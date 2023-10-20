@@ -1,8 +1,7 @@
-import type { Message } from "@/components/ChatList/helpers/messageHelper";
 import { ProcessEndException, ProcessorBase } from "./base";
-import { MessageFlag, isFlagSet } from '../../../components/ChatList/helpers/messageHelper';
 import { getChatSession } from "../chatStore";
 import { Db } from "@/utils/db";
+import { Message, MessageFlag, isFlagSet } from '../../../modules/advancedChat/base';
 
 export class ACKUpdateLayer extends ProcessorBase {
   private static _instance = new ACKUpdateLayer()
