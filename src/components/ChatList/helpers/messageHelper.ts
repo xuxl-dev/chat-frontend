@@ -701,6 +701,11 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
         this.socket.on('disconnect', (reason) => {
           console.log('disconnected', reason)
           this.status = 'disconnected'
+          if (reason === 'io client disconnect') {
+            // user manually disconnected
+            // don't try to reconnect
+            return
+          }
           pq.add(async () => await this.tryReconnect())
         })
 
