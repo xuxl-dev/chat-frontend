@@ -10,13 +10,13 @@ export function getToken() {
   return localStorage.getItem('token')
 }
 
-export async function login(username: string, password: string) {
-  if (useChatStore().me) {
+export async function login(username: string, password: string, force_switch: boolean = false) {
+  if (useChatStore().me && !force_switch) {
     // already logged in
     return useChatStore().me
   }
   const usr = await loginAccount(username, password)
-  // console.log(usr)
+  console.log(usr)
   useChatStore().me = usr
   setToken(usr.jwt)
   return usr

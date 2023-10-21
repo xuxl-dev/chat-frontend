@@ -19,8 +19,8 @@
         <button @click="switchUser">switch user</button> <br>
         <button @click="console.log(getChatSession(useChatStore().me.id === 1 ? 2 : 1).getRawChat())">log chat</button>
         <br>
-        <button @click="showDb">Show DB</button> <br>
-        <button @click="clearDB">Clear DB</button> <br>
+        <!-- <button @click="showDb">Show DB</button> <br>
+        <button @click="clearDB">Clear DB</button> <br> -->
         <button @click="establishE2ee">E2EE</button> <br>
         <button @click="getChatSession(useChatStore().me.id === 1 ? 2 : 1).heartBeat()">HeartBeat</button> <br>
       </div>
@@ -64,7 +64,9 @@ const sendE2ee = () => {
 }
 
 const switchUser = async () => {
-  //TODO
+  const usr = await login("user", "user", true)
+  await bkm.init(usr.jwt)
+  initGroupStore()
 }
 
 const showDb = async () => {
