@@ -7,7 +7,7 @@ type Events = {
   // onSelectPerson: { uid: number; ignoreCheck?: boolean }
   // onAddReadCountTask: { msgId: number }
   // onRemoveReadCountTask: { msgId: number }
-  [key: string]: object | void | undefined | null
+  [key: string]: any
 }
 
 const bus: Emitter<Events> = mitt<Events>()

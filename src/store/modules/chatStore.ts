@@ -26,9 +26,7 @@ import { token0 } from '@/modules/auth/keys'
 
 const useChatStore = defineStore('chatStore', () => {
   const server = ref('http://localhost:3001')
-  const token = ref(
-    token0
-  )
+
   const bkm = new BakaMessager({
     server: server.value,
     port: 3001,
