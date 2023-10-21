@@ -1,18 +1,23 @@
 <template>
-  cur channel::{{ curChannel }}
-  <MsgList class="scroller" ref="msglistRef" :channel="curChannel" />
+  cur channel::{{ channel }}
+  <MsgList class="scroller" ref="msglistRef" :channel="channel" />
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, defineProps } from 'vue';
 import MsgList from './MsgList.vue';
 import useChatStore from '@/store/modules/chatStore';
-
-const msglistRef = ref<any | null>(null)
-const store = useChatStore()
-const curChannel = computed(() => {
-  return store.me?.id === 1 ? 2 : 1
+const props = defineProps({
+  channel: {
+    type: Number,
+    required: true
+  }
 })
+const msglistRef = ref<any | null>(null)
+
+// const curChannel = computed(() => {
+//   return store.me?.id === 1 ? 2 : 1
+// })
 
 // idlecallback
 const idleCallback = globalThis.requestIdleCallback
@@ -35,13 +40,6 @@ function runChunked(task: Function, data: any[], chunkSize: number) {
   _run()
 }
 
-const loadMore = ()=>{
-  msglistRef.value.onTopHit()
-}
-
-defineExpose({
-  loadMore
-})
 
 </script>
 

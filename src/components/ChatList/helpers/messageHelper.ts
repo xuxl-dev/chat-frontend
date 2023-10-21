@@ -1,15 +1,17 @@
 import { Socket, io } from 'socket.io-client'
 import EventEmitter from 'eventemitter3'
 import useChatStore, { updateConversation } from '@/store/modules/chatStore'
-import { timeout } from '@/utils/utils'
+import { delay, timeout } from '@/utils/utils'
 import { Cipher2 } from './cipher2'
 import PQueue from 'p-queue'
+
 import {
   ACKMsgType,
   Message,
   MessageFlag,
   isFlagSet
 } from '../../../modules/advancedChat/base'
+import { getToken } from '@/modules/auth/auth'
 
 export function getMessageStr(msg: Message) {
   //this is dirty
@@ -555,7 +557,10 @@ class ACKEchoBackReceiver implements MessageHandler {
     return !(msg.flag & MessageFlag.ACK)
   }
   handler: (msg: Message) => any = async (msg) => {
-    if (isFlagSet(MessageFlag.ACK, msg) || isFlagSet(MessageFlag.DO_NOT_ACK, msg)) {
+    if (
+      isFlagSet(MessageFlag.ACK, msg) ||
+      isFlagSet(MessageFlag.DO_NOT_ACK, msg)
+    ) {
       // this is an ACK message, do nothing
       return
     }
@@ -589,19 +594,23 @@ function InjectDefaultPipeline(conversation: Conversation) {
 type BakaMessagerConfig = {
   server: string
   port: number
-  token: string
 }
+
+const pq = new PQueue({ concurrency: 1 }) //FIXME dont know why this should be outside of class
 
 export class BakaMessager extends EventEmitter implements IMessageHelper {
   conversationMap = new Map<number, Conversation>()
   socket: Socket
   user: { [key: string]: any } | undefined
+  maxRetry = 3
+  attempts = 0
+
   private config: BakaMessagerConfig
 
   constructor(config: BakaMessagerConfig) {
     super()
     this.config = config
-    this.switchUser(config.token)
+    // this.switchUser(config.token)
   }
 
   switchUser(token: string) {
@@ -610,7 +619,7 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
     }
     this.socket = io(this.config.server, {
       port: this.config.port,
-      autoConnect: true,
+      autoConnect: false,
       auth: {
         token
       },
@@ -646,10 +655,30 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
     }, 1000)
   }
 
+  async tryReconnect() {
+    if (
+      this.socket.disconnected &&
+      this.attempts <= this.maxRetry &&
+      pq.size === 0
+    ) {
+      console.log('try reconnecting...')
+      await this.init(getToken())
+      // random sleep
+
+      const delayTime = Math.random() * 1000
+      // console.log(`delay ${delayTime}ms`)
+      await delay(delayTime)
+      // console.log('delay done')
+      // pq.clear()
+      ++this.attempts
+    }
+  }
+
   // cryptoHelper: CryptoHelper = new CryptoHelper()
   cipher: Cipher2 = new Cipher2()
 
-  public async init() {
+  public async init(token: string) {
+    this.switchUser(token)
     return timeout(
       new Promise<void>((resolve, reject) => {
         this.socket.connect()
@@ -657,16 +686,27 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
           this.user = o
           console.log('connected: ', o)
           useChatStore().me = o
+          this.status = 'connected'
+          // this.attempts = 0
           resolve()
         })
 
         this.socket.on('connect_error', (error) => {
           console.error('Connection error:', error.message)
+          this.status = 'disconnected'
+          pq.add(async () => await this.tryReconnect())
           reject(error)
         })
 
         this.socket.on('disconnect', (reason) => {
           console.log('disconnected', reason)
+          this.status = 'disconnected'
+          if (reason === 'io client disconnect') {
+            // user manually disconnected
+            // don't try to reconnect
+            return
+          }
+          pq.add(async () => await this.tryReconnect())
         })
 
         this.socket.on('message', (msg: object) => {
@@ -706,5 +746,16 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
       this.newConversation(id)
     }
     return this.conversationMap.get(id)
+  }
+
+  _status: 'connected' | 'disconnected' | 'connecting' = 'disconnected'
+
+  public get status(): 'connected' | 'disconnected' | 'connecting' {
+    return this._status
+  }
+
+  public set status(v: 'connected' | 'disconnected' | 'connecting') {
+    this._status = v
+    this.emit('status', v)
   }
 }

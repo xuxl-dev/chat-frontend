@@ -14,6 +14,7 @@ import VirtualList from './VirtualList/index.tsx';
 import MessageStack from './MessageStack.vue';
 import { getChatSession, ChatSession } from '../../store/modules/chatStore';
 
+
 const props = defineProps({
   channel: {
     type: Number,
@@ -27,9 +28,8 @@ const source = ref<StackedMessage[]>([])
 const virtualListRef = ref<any | null>(null)
 let isLoading = ref(false)
 let currentSession: ChatSession | null = null
-onMounted(() => {
 
-})
+
 
 const getChatRange = () => {
   const lst = lastStack()

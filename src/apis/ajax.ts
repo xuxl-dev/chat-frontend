@@ -8,6 +8,34 @@ export const defHttp = axios.create({
   baseURL: import.meta.env.VITE_APP_AXIOS_BASE_URL
 })
 
+defHttp.interceptors.request.use((config) => {
+  const { method, params } = config
+
+  const token = localStorage.getItem('token')
+  const headers: any = {
+    authorization: `Bearer ${token}`
+  }
+
+  return {
+    ...config,
+    headers
+  }
+})
+
+defHttp.interceptors.response.use((v) => {
+  if (v.data?.code === 401) {
+    localStorage.removeItem('token')
+    // alert('即将跳转登录页。。。', '登录过期')
+    // setTimeout(redirectHome, 1500)
+    return v
+  }
+  if (v.status === 200 || v.status === 201) {
+    return v
+  }
+  // alert(v.statusText, '网络错误')
+  return Promise.reject(v)
+})
+
 /**
  * 请求拦截
  */
