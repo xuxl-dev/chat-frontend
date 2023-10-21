@@ -1,8 +1,15 @@
 import type { Ref } from 'vue'
-import { getMessageStr} from './helpers/messageHelper'
-import useChatStore, { debounceSyncMsg, getChatSession } from '@/store/modules/chatStore'
+import { getMessageStr } from './helpers/messageHelper'
+import useChatStore, {
+  debounceSyncMsg,
+  getChatSession
+} from '@/store/modules/chatStore'
 import type { ILocalMessage } from '@/utils/db'
-import { Message, ACKMsgType, MessageFlag } from '../../modules/advancedChat/base';
+import {
+  Message,
+  ACKMsgType,
+  MessageFlag
+} from '../../modules/advancedChat/base'
 
 export class MessageWarp {
   static _id = 0
@@ -15,7 +22,7 @@ export class MessageWarp {
   // for debug, wont send ack or update db
   _dont_track: boolean = false
 
-  private constructor() { }
+  private constructor() {}
 
   static fromMessage(message: Message): MessageWarp {
     const warp = new MessageWarp()
@@ -72,10 +79,9 @@ export class MessageWarp {
     return this._msg.msgId
   }
 
-
   /**
    * when receive a ack message, update this message
-   * @param type 
+   * @param type
    */
   updateAck(type: ACKMsgType) {
     if (this._dont_track) {
@@ -87,9 +93,12 @@ export class MessageWarp {
       } else {
         this._msg.hasReadCount = 1
       }
-    } else { // DELIVERED
+    } else {
+      // DELIVERED
       if (this._msg.hasReadCount > 0) {
-        throw new Error('this message has been read, cannot update to DELIVERED')
+        throw new Error(
+          'this message has been read, cannot update to DELIVERED'
+        )
       }
       this._msg.hasReadCount = 0
     }
@@ -98,7 +107,7 @@ export class MessageWarp {
 
   /**
    * send ack to this message
-   * @param type 
+   * @param type
    */
   ack(type: ACKMsgType = ACKMsgType.READ) {
     if (this._dont_track) {
@@ -119,14 +128,12 @@ export class MessageWarp {
   }
 }
 
-
-
 export class StackedMessage {
   static _stack_id = 0
   stack_id: number = StackedMessage._stack_id++
   messages: Ref<MessageWarp>[] = []
 
-  constructor(arr: (Ref<MessageWarp>)[] = []) {
+  constructor(arr: Ref<MessageWarp>[] = []) {
     this.messages = arr
   }
 
@@ -146,17 +153,35 @@ export class StackedMessage {
   }
 
   public get range(): [Date, Date] {
-    return [
-      this.messages.at(0).value.sentAt,
-      this.messages.at(-1).value.sentAt
-    ]
+    return [this.messages.at(0).value.sentAt, this.messages.at(-1).value.sentAt]
   }
 }
 
 export class User {
   id: number
   name: string
-  avatar: string;
+  avatar: string
+  username: string
+  password: string
+  email?: string
+  signature?: string
+  title?: string
+  group?: string
+  tags?: { key: number; label: string }[]
+  notifyCount: number
+  unreadCount: number
+  country?: string
+  role: 'admin' | 'user' | 'visitor'
+  attributes: Attr
+  address?: string
+  phone?: string
+  status?: number
+  created_at: Date
+  updated_at: Date
+  deleted_at?: Date
+  joinedChatGroups: number[]
+  public_key?: string;
+
   [key: string]: any
   constructor(id: number, name: string, avatar: string) {
     this.id = id
