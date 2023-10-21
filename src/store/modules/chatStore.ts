@@ -21,7 +21,7 @@ import {
   registerFunctionalCb
 } from './ChatProcessors/FunctionalLayer'
 import { HeartBeatMsg } from '@/modules/advancedChat/decls/heartbeat'
-import { generateUUID } from '@/utils/utils'
+
 
 const useChatStore = defineStore('chatStore', () => {
   const server = ref('http://localhost:3001')

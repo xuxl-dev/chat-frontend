@@ -659,9 +659,9 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
       // random sleep
 
       const delayTime = Math.random() * 1000
-      console.log(`delay ${delayTime}ms`)
+      // console.log(`delay ${delayTime}ms`)
       await delay(delayTime)
-      console.log('delay done')
+      // console.log('delay done')
       // pq.clear()
       ++this.attempts
     }
