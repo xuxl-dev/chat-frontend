@@ -27,10 +27,10 @@ defHttp.interceptors.response.use((v) => {
     localStorage.removeItem('token')
     // alert('即将跳转登录页。。。', '登录过期')
     // setTimeout(redirectHome, 1500)
-    return v.data
+    return v
   }
   if (v.status === 200 || v.status === 201) {
-    return v.data
+    return v
   }
   // alert(v.statusText, '网络错误')
   return Promise.reject(v)
