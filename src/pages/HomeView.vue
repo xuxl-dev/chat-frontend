@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue';
 import ChatList from '@/components/ChatList/index.vue';
 import useChatStore, { getChatSession } from '@/store/modules/chatStore';
 import { Db } from '@/utils/db';
@@ -49,12 +49,28 @@ const chatListRef = ref<any | null>(null)
 const loadMore = async () => {
   chatListRef.value.loadMore()
 }
-
+let isConnected = ref(false)
+onMounted(() => {
+  useChatStore().bkm.on('status', (status) => {
+    console.log('status', status)
+    isConnected.value = status !== 'connected'
+    const attempts = useChatStore().bkm.attempts
+    const maxRetry = useChatStore().bkm.maxRetry
+    if (attempts === maxRetry) {
+      loadingText.value = `Failed to connect to server. Please refresh the page.`
+      return
+    }
+    loadingText.value = `Disconnected from server... Reconnecting... (${attempts}/${maxRetry})`
+  })
+})
+const loadingText = ref('Disconnected from server... Reconnecting...')
 </script>
 
 <template>
   <main>
-    <ChatList ref="chatListRef" />
+    <div class="spacer" v-loading="isConnected" :element-loading-text="loadingText">
+      <ChatList ref="chatListRef" />
+    </div>
     <div>
       <input type="text" v-model="msg" />
       <p>Current user:{{ useChatStore().me?.id }}</p>
@@ -70,3 +86,10 @@ const loadMore = async () => {
     </div>
   </main>
 </template>
+
+<style lang="scss">
+.spacer {
+  min-height: 40vh;
+  height: 50vh;
+}
+</style>

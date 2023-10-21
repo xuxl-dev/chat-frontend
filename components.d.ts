@@ -20,6 +20,7 @@ declare module '@vue/runtime-core' {
     IconEcosystem: typeof import('./src/components/icons/IconEcosystem.vue')['default']
     IconSupport: typeof import('./src/components/icons/IconSupport.vue')['default']
     IconTooling: typeof import('./src/components/icons/IconTooling.vue')['default']
+    Loading: typeof import('element-plus/es')['ElLoadingDirective']
     MessageItem: typeof import('./src/components/ChatList/MessageItem.vue')['default']
     MessageList: typeof import('./src/components/ChatList/MessageList.vue')['default']
     MessageStack: typeof import('./src/components/ChatList/MessageStack.vue')['default']

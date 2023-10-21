@@ -73,3 +73,11 @@ export function generateUUID() {
     return (c == 'x' ? r : (r & 0x3 | 0x8)).toString(16);
   });
 }
+
+export function delay(ms: number) {
+  return new Promise<void>((resolve) => {
+    setTimeout(() => {
+      resolve()
+    }, ms)
+  })
+}
