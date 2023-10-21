@@ -38,17 +38,6 @@ export default defineConfig({
     host: '0.0.0.0',
     proxy: {
       '/api/': {
-        target:
-          'https://service-rbji0bev-1256505457.cd.apigw.tencentcs.com/release',
-        changeOrigin: true,
-        rewrite: (p) => p.replace(/^\/api/, '')
-      },
-      '/api-prod/': {
-        target: 'http://localhost:3001',
-        changeOrigin: true,
-        rewrite: (p) => p.replace(/^\/api-prod/, '')
-      },
-      '/api-test/': {
         target: 'http://localhost:3001',
         changeOrigin: true,
         rewrite: (p) => p.replace(/^\/api-test/, '')
