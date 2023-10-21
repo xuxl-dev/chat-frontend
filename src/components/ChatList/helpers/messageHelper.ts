@@ -11,6 +11,7 @@ import {
   MessageFlag,
   isFlagSet
 } from '../../../modules/advancedChat/base'
+import { getToken } from '@/modules/auth/auth'
 
 export function getMessageStr(msg: Message) {
   //this is dirty
@@ -556,7 +557,10 @@ class ACKEchoBackReceiver implements MessageHandler {
     return !(msg.flag & MessageFlag.ACK)
   }
   handler: (msg: Message) => any = async (msg) => {
-    if (isFlagSet(MessageFlag.ACK, msg) || isFlagSet(MessageFlag.DO_NOT_ACK, msg)) {
+    if (
+      isFlagSet(MessageFlag.ACK, msg) ||
+      isFlagSet(MessageFlag.DO_NOT_ACK, msg)
+    ) {
       // this is an ACK message, do nothing
       return
     }
@@ -590,7 +594,6 @@ function InjectDefaultPipeline(conversation: Conversation) {
 type BakaMessagerConfig = {
   server: string
   port: number
-  token: string
 }
 
 const pq = new PQueue({ concurrency: 1 }) //FIXME dont know why this should be outside of class
@@ -607,7 +610,7 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
   constructor(config: BakaMessagerConfig) {
     super()
     this.config = config
-    this.switchUser(config.token)
+    // this.switchUser(config.token)
   }
 
   switchUser(token: string) {
@@ -653,9 +656,13 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
   }
 
   async tryReconnect() {
-    if (this.socket.disconnected && this.attempts <= this.maxRetry && pq.size === 0) {
+    if (
+      this.socket.disconnected &&
+      this.attempts <= this.maxRetry &&
+      pq.size === 0
+    ) {
       console.log('try reconnecting...')
-      await this.init()
+      await this.init(getToken())
       // random sleep
 
       const delayTime = Math.random() * 1000
@@ -670,7 +677,8 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
   // cryptoHelper: CryptoHelper = new CryptoHelper()
   cipher: Cipher2 = new Cipher2()
 
-  public async init() {
+  public async init(token: string) {
+    this.switchUser(token)
     return timeout(
       new Promise<void>((resolve, reject) => {
         this.socket.connect()
@@ -737,11 +745,11 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
 
   _status: 'connected' | 'disconnected' | 'connecting' = 'disconnected'
 
-  public get status() : 'connected' | 'disconnected' | 'connecting' {
+  public get status(): 'connected' | 'disconnected' | 'connecting' {
     return this._status
   }
-  
-  public set status(v : 'connected' | 'disconnected' | 'connecting') {
+
+  public set status(v: 'connected' | 'disconnected' | 'connecting') {
     this._status = v
     this.emit('status', v)
   }

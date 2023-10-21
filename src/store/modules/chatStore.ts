@@ -21,17 +21,17 @@ import {
   registerFunctionalCb
 } from './ChatProcessors/FunctionalLayer'
 import { HeartBeatMsg } from '@/modules/advancedChat/decls/heartbeat'
+import { token0 } from '@/modules/auth/keys'
 
 
 const useChatStore = defineStore('chatStore', () => {
   const server = ref('http://localhost:3001')
   const token = ref(
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJhZG1pbiIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTY5NzcyNjcxNywiZXhwIjoxNzAwMzE4NzE3fQ.yTkFWrcfTachD0mL1QYYpKz82sSHq2eIjyKVVX7KxDs'
+    token0
   )
   const bkm = new BakaMessager({
     server: server.value,
     port: 3001,
-    token: token.value
   })
   const me = ref<User | null>(null)
 

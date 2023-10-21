@@ -1,29 +1,27 @@
 <template>
-  <div class="oneGroup" @click="chooseGroup()">
-    <div class="picture">
-      <el-avatar> {{ group.picture }} </el-avatar>
+  <div class="flex flex-row hover:bg-neutral-300 p-1 select-none" @click="chooseGroup">
+    <div class="flex items-center m-1">
+      <el-avatar> {{ group.avatar }} </el-avatar>
     </div>
-    <div class="name">{{ group.name }}</div>
-    <div class="number"><el-badge class="mark" :value="group.number" /></div>
+    <div class="flex items-center m-1">
+      <p class="whitespace-nowrap">{{ group.name }}</p>
+    </div>
+    <div class="flex items-center m-1">
+      <el-badge class="mark" :value="group.unread" v-if="!!group.unread"/>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { Ref } from 'vue'
-import groupStore from '@/store/modules/groupStore'
+import groupStore, { ChatGroup } from '@/store/modules/groupStore'
+
 
 const groupstore = groupStore()
 
-class Group {
-  id: string
-  picture: string
-  name: string
-  number: number
-}
-
 const props = defineProps({
   group: {
-    type: Object as () => Group,
+    type: Object as () => ChatGroup,
     required: true
   }
 })
@@ -34,7 +32,7 @@ function chooseGroup() {
 </script>
 
 <style scoped>
-.oneGroup {
+/* .oneGroup {
   width: 100%;
   height: 60px;
   padding: 10px;
@@ -60,5 +58,5 @@ function chooseGroup() {
 .number {
   display: inline-block;
   width: 10%;
-}
+} */
 </style>

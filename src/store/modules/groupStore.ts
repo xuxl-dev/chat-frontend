@@ -1,59 +1,66 @@
+import { getAllChatGroups } from '@/apis/modules/chatGroups'
 import { defineStore } from 'pinia'
 import { ref, shallowRef, type Ref, computed } from 'vue'
-interface IGroup {
-  id: string,
-  picture: Ref<string>,
-  name: Ref<string>,
-  number: Ref<number>
-}
-const useGroupStore = defineStore('vgyvybhnun', () => {
 
-  function getgroup() {
+export class ChatGroup {
+  id: string
+  name: string
+  avatar: string
+  desc: string
+  members: number[]
+  unread: number
 
+  constructor({
+    id,
+    name,
+    avatar,
+    desc,
+    members,
+    unread
+  }: {
+    id: string
+    name: string
+    avatar: string
+    desc: string
+    members?: number[]
+    unread?: number
+  }) {
+    this.id = id
+    this.name = name
+    this.avatar = avatar
+    this.desc = desc
+    this.members = members || []
+    this.unread = unread || 0
   }
+}
 
+export async function initGroupStore() {
+  await fetchGroups()
+}
+
+export async function fetchGroups() {
+  const grps = await getAllChatGroups()
+  console.log(`grps:`, grps)
+  useGroupStore().rawGroups = grps
+}
+
+const useGroupStore = defineStore('groupStore', () => {
   const selectedGroup = ref<string | null>(null)
+  const rawGroups = ref<ChatGroup[]>([])
+  const keyword = ref<string>('')
 
-  let rawgroups = ref<IGroup[]>([
-    {
-      id: '1',
-      picture: ref('pig'),
-      name: ref('1号群'),
-      number: ref(1)
-    },
-    {
-      id: '2',
-      picture: ref('dog'),
-      name: ref('2号群'),
-      number: ref(2)
-    },
-    {
-      id: '3',
-      picture: ref('cat'),
-      name: ref('3号群'),
-      number: ref(0)
-    }
-  ])
-
-  const field = ref<keyof IGroup>('id')
-  let groups = computed(() => {
-    return sortByFieldName(field.value)
+  const displayGroups = computed(() => {
+    return filterGroups(keyword.value)
   })
 
-  const sortByFieldName = (fieldName: keyof IGroup, asending = true) => {
-    return rawgroups.value.sort(
-      (a, b) => (a[fieldName] < b[fieldName]) !== asending ? 1 : -1
-    )
-  }
-
-  const sortBy = (cmp: (a: any, b: any) => number) => {
-    return rawgroups.value.sort(cmp)
+  const filterGroups = (keyword: string) => {
+    return rawGroups.value.filter((g) => g.name.includes(keyword))
   }
 
   return {
-    rawgroups,
+    rawGroups,
     selectedGroup,
-    groups
+    displayGroups
   }
 })
 

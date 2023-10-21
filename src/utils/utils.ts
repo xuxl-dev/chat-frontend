@@ -12,16 +12,20 @@ export async function timeout<T>(
   ms: number
 ) {
   return new Promise<T>(async (resolve, reject) => {
-    setTimeout(() => {
+    const timeout = setTimeout(() => {
+      // print stack trace
+      console.trace()
       reject(new Error('timeout'))
     }, ms)
     try {
       if (typeof funcFactory === 'function') {
         const func = funcFactory()
         const result = await func()
+        clearTimeout(timeout)
         resolve(result)
       } else {
         const result = await funcFactory
+        clearTimeout(timeout)
         resolve(result)
       }
     } catch (error) {
@@ -60,18 +64,20 @@ export async function retry<T>(
   })
 }
 
-
 export function generateUUID() {
-  var d = new Date().getTime();
-  if (typeof performance !== 'undefined' && typeof performance.now === 'function'){
-    d += performance.now(); // 使用高性能时钟
+  var d = new Date().getTime()
+  if (
+    typeof performance !== 'undefined' &&
+    typeof performance.now === 'function'
+  ) {
+    d += performance.now() // 使用高性能时钟
   }
   // 生成UUID格式的字符串
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    var r = (d + Math.random() * 16) % 16 | 0;
-    d = Math.floor(d / 16);
-    return (c == 'x' ? r : (r & 0x3 | 0x8)).toString(16);
-  });
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    var r = (d + Math.random() * 16) % 16 | 0
+    d = Math.floor(d / 16)
+    return (c == 'x' ? r : (r & 0x3) | 0x8).toString(16)
+  })
 }
 
 export function delay(ms: number) {

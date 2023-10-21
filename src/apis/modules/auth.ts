@@ -7,13 +7,14 @@ enum userMetaApi {
   status = 'login/account'
 }
 
-export async function login(username: string, password: string): Promise<User> {
-  const ret = (
-    await defHttp.post(prefix + userMetaApi.status, {
-      username,
-      password
-    })
-  ).data.user
+export async function loginAccount(
+  username: string,
+  password: string
+): Promise<User & { jwt: string }> {
+  const ret = await defHttp.post(prefix + userMetaApi.status, {
+    username,
+    password
+  })
 
-  return ret
+  return ret.data
 }
