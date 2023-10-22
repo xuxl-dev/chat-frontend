@@ -3,8 +3,9 @@
     <el-icon v-if="isLoading" :size="14" class="loading">
       消息加载中
     </el-icon>
-    <VirtualList :data="source" :data-key="getKey" :item="MessageStack" :size="8" class="virtual-list container"
+    <VirtualList :labeled='channel' :data="source" :data-key="getKey" :item="MessageStack" :size="8" class="virtual-list container"
       ref="virtualListRef" @totop="onTopHit()" @tobottom="onBottomHit()" />
+    <button @click="console.log(source)">LOG source</button>
   </div>
 </template>
 <script setup lang="ts">
@@ -12,8 +13,7 @@ import { ref, watch, type Ref, reactive, onMounted } from 'vue';
 import { MessageWarp, StackedMessage } from './ChatMessage';
 import VirtualList from './VirtualList/index.tsx';
 import MessageStack from './MessageStack.vue';
-import { getChatSession, ChatSession } from '../../store/modules/chatStore';
-
+import { ChatSession, getChatSession } from '../../store/modules/chatStore';
 
 const props = defineProps({
   channel: {
@@ -28,8 +28,6 @@ const source = ref<StackedMessage[]>([])
 const virtualListRef = ref<any | null>(null)
 let isLoading = ref(false)
 let currentSession: ChatSession | null = null
-
-
 
 const getChatRange = () => {
   const lst = lastStack()
@@ -51,6 +49,7 @@ const insertNewStackAt = (msg: MessageWarp, idx: number) => {
 
 //TODO: this is buggy
 const insertMessage = (msg: MessageWarp) => {
+  console.log('insert message to list', props.channel)
   // determine the location to insert the message by sentAt
   // since messages are ordered by time and seperated by stacks (sender)
   // we can use binary search to find the stack to insert (if there is one)
@@ -150,29 +149,43 @@ const insertMessage = (msg: MessageWarp) => {
   console.warn('case 3, split the stack and insert')
 }
 
-// on prop channel change
-watch(() => props.channel, (newVal, oldVal) => {
-  currentSession = getChatSession(newVal)
+let hasInit = false
+onMounted(() => {
+  if (hasInit) {
+    return
+  }
+  hasInit = true
+  currentSession = getChatSession(props.channel)
   isLoading = currentSession.isLoading
   currentSession.on('new-message', (warp: Ref<MessageWarp>) => {
-    // if (warp.value._msg.sentAt < source.value[0].messages[0].value._msg.sentAt) {
-    //   source.value.unshift(reactive(new StackedMessage([warp])))
-    //   return
-    // }
-
-    // const lst = lastStack()
-    // if (lst && lst.sender.id === warp.value.sender.id) {
-    //   lst.append(warp)
-    //   return
-    // }
-    // source.value.push(reactive(new StackedMessage([warp])))
     insertMessage(warp.value)
-    // currentSession.mostEarlyMsgId.value = firstStack()?.messages.at(0)?.value?.id ?? null
-    // currentSession.mostLateMsgId.value = lastStack()?.messages.at(-1)?.value?.id ?? null
   })
+})
+// watch(() => props.channel, (newVal, oldVal) => {
+//   console.log('channel changed', newVal, oldVal)
+// }, { immediate: true })
+// on prop channel change
+// watch(() => props.channel, (newVal, oldVal) => {
+//   currentSession = getChatSession(newVal)
+//   isLoading = currentSession.isLoading
+//   currentSession.on('new-message', (warp: Ref<MessageWarp>) => {
+//     // if (warp.value._msg.sentAt < source.value[0].messages[0].value._msg.sentAt) {
+//     //   source.value.unshift(reactive(new StackedMessage([warp])))
+//     //   return
+//     // }
+//     // const lst = lastStack()
+//     // if (lst && lst.sender.id === warp.value.sender.id) {
+//     //   lst.append(warp)
+//     //   return
+//     // }
+//     // source.value.push(reactive(new StackedMessage([warp])))
+//     insertMessage(warp.value)
+//     // currentSession.mostEarlyMsgId.value = firstStack()?.messages.at(0)?.value?.id ?? null
+//     // currentSession.mostLateMsgId.value = lastStack()?.messages.at(-1)?.value?.id ?? null
+//   })
 
-  oldVal && getChatSession(oldVal).off('new-message')
-}, { immediate: true })
+//   oldVal && getChatSession(oldVal).off('new-message')
+// }, { immediate: true })
 
 const lastStack = () => {
   return source.value.at(-1)

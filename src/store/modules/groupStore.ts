@@ -1,4 +1,5 @@
 import { getAllChatGroups } from '@/apis/modules/chatGroups'
+import { getFriends } from '@/apis/modules/user'
 import { defineStore } from 'pinia'
 import { ref, shallowRef, type Ref, computed } from 'vue'
 
@@ -36,12 +37,19 @@ export class ChatGroup {
 
 export async function initGroupStore() {
   await fetchGroups()
+  await fetchFriends()
 }
 
 export async function fetchGroups() {
   const grps = await getAllChatGroups()
   console.log(`grps:`, grps)
   useGroupStore().rawGroups = grps
+}
+
+export async function fetchFriends() {
+  const users = await getFriends()
+  console.log(`friends:`, users)
+
 }
 
 const useGroupStore = defineStore('groupStore', () => {

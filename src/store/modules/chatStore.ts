@@ -21,15 +21,13 @@ import {
   registerFunctionalCb
 } from './ChatProcessors/FunctionalLayer'
 import { HeartBeatMsg } from '@/modules/advancedChat/decls/heartbeat'
-import { token0 } from '@/modules/auth/keys'
-
 
 const useChatStore = defineStore('chatStore', () => {
   const server = ref('http://localhost:3001')
 
   const bkm = new BakaMessager({
     server: server.value,
-    port: 3001,
+    port: 3001
   })
   const me = ref<User | null>(null)
 
@@ -46,8 +44,9 @@ export async function updateConversation(raw: Message) {
   if (sesses.has(raw.senderId)) {
     sesses.get(raw.senderId).notify(raw)
   } else {
-    const conversation = await new ChatSession(raw.senderId).notify(raw)
+    const conversation = new ChatSession(raw.senderId) //TODO distinguish group and private message here
     sesses.set(raw.senderId, conversation)
+    await conversation.notify(raw)
   }
 }
 
@@ -81,6 +80,7 @@ export class ChatSession extends EventEmitter {
     super()
     this.bindingGroup = bindingGroup
     this.conversation = useChatStore().bkm.getConversation(bindingGroup)
+    this.initProcessors()
     this.setNexts()
   }
 
@@ -96,15 +96,21 @@ export class ChatSession extends EventEmitter {
   earliestMsg: Ref<MessageWarp | null> = ref(null)
   latestMsg: Ref<MessageWarp | null> = ref(null)
   isLoading = ref(false)
+  processors: ProcessorLayer[]
 
-  processors: ProcessorLayer[] = [
-    BeginProcessorLayer.instance,
-    FunctionalLayer.instance,
-    ACKUpdateLayer.instance,
-    EndProcessorLayer.instance
-  ]
+  initProcessors() {
+    this.processors = [
+      new BeginProcessorLayer(this.bindingGroup, false),
+      FunctionalLayer.instance,
+      ACKUpdateLayer.instance,
+      EndProcessorLayer.instance
+    ]
+  }
 
   private setNexts() {
+    if (this.processors.length === 0 || this.processors.length === 1) {
+      return
+    }
     for (let i = 0; i < this.processors.length - 1; i++) {
       this.processors[i].next = this.processors[i + 1].process
     }
@@ -120,6 +126,7 @@ export class ChatSession extends EventEmitter {
       await this.processors[0].process(msg)
     } catch (e) {
       if (e instanceof ProcessEndException) {
+        console.log('ProcessEndException', e, `dropped`, msg)
         return // this is normal
       } else {
         throw e
@@ -151,11 +158,17 @@ export class ChatSession extends EventEmitter {
     this.chat.set(messageWarp.id, msgRef)
 
     // update most early message, most late message
-    if (!this.earliestMsg.value || messageWarp._msg.sentAt < this.earliestMsg.value._msg.sentAt) {
+    if (
+      !this.earliestMsg.value ||
+      messageWarp._msg.sentAt < this.earliestMsg.value._msg.sentAt
+    ) {
       this.earliestMsg.value = messageWarp
       this.emit('update-earliest', this.earliestMsg)
     }
-    if (!this.latestMsg.value || messageWarp._msg.sentAt > this.latestMsg.value._msg.sentAt) {
+    if (
+      !this.latestMsg.value ||
+      messageWarp._msg.sentAt > this.latestMsg.value._msg.sentAt
+    ) {
       this.latestMsg.value = messageWarp
       this.emit('update-latest', this.latestMsg)
     }
@@ -169,7 +182,7 @@ export class ChatSession extends EventEmitter {
     return this.chat.get(id)
   }
 
-  async send(msg: Message, transform?: (warp: MessageWarp)=> MessageWarp) {
+  async send(msg: Message, transform?: (warp: MessageWarp) => MessageWarp) {
     const msg_copy = msg.clone()
     const sentMsgAck = await this.conversation.send(msg)
 
@@ -207,14 +220,14 @@ export class ChatSession extends EventEmitter {
       this.earliestMsg?.value._msg.sentAt ?? new Date(), //TODO test this
       5
     )
-    //TODO, if the loading time is too short, 
+    //TODO, if the loading time is too short,
     //the loading animation will not be shown, or it will be flashing
-    this.isLoading.value = false 
-    
+    this.isLoading.value = false
+
     msgs.forEach((msg) => {
       this.setMsg(MessageWarp.fromDbMessage(msg))
     })
-    
+
     console.log('loadMore', msgs)
     return msgs
   }
@@ -231,7 +244,7 @@ export class ChatSession extends EventEmitter {
         evt_uuid
       })
     )
-    this.send(msg, (o)=> o.noTrack())
+    this.send(msg, (o) => o.noTrack())
     console.log(`sent heart beat`, msg)
     const ret = await registerFunctionalCb(evt_uuid, async (msg) => {
       const content = HeartBeatMsg.peel(msg)

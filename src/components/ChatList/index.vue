@@ -1,5 +1,5 @@
 <template>
-  cur channel::{{ channel }}
+  Channel::{{ channel }}, isGroup::{{ isGroup }}
   <MsgList class="scroller" ref="msglistRef" :channel="channel" />
 </template>
 
@@ -7,12 +7,18 @@
 import { ref, onMounted, computed, defineProps } from 'vue';
 import MsgList from './MsgList.vue';
 import useChatStore from '@/store/modules/chatStore';
+
 const props = defineProps({
   channel: {
     type: Number,
     required: true
+  },
+  isGroup: {
+    type: Boolean,
+    required: true
   }
 })
+
 const msglistRef = ref<any | null>(null)
 
 // const curChannel = computed(() => {

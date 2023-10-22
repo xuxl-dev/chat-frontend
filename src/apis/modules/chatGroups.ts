@@ -8,7 +8,7 @@ enum chatGroupApi {
   addAdmin = 'add-admin',
   all = 'all',
   join = 'join',
-  getGroupMembers = 'members'
+  getGroupMembers = 'members',
 }
 
 export async function createChatGroup(createChatGroupDto: {
@@ -46,7 +46,6 @@ export async function addAdmin(addAdminDto: {
 
 export async function getAllChatGroups(): Promise<any> {
   const ret = (await defHttp.post(prefix + chatGroupApi.all)).data
-
   return ret
 }
 
@@ -73,3 +72,5 @@ export async function getGroup(groupId: number): Promise<any> {
 
   return ret
 }
+
+

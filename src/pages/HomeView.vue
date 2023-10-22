@@ -1,5 +1,3 @@
-
-
 <template>
   <div class="flex flex-row ">
     <div>
@@ -8,7 +6,7 @@
     <main class="w-full">
       <div class="spacer" v-loading="isConnected" :element-loading-text="loadingText">
         <KeepAlive :max="20">
-          <component :is="tabs[currentTab]?.render" />
+          <component :is="currentTab" />
         </KeepAlive>
       </div>
       <div>
@@ -29,7 +27,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, onActivated } from 'vue';
 import useChatStore, { getChatSession } from '@/store/modules/chatStore';
 import { Db } from '@/utils/db';
 import Dexie from 'dexie';
@@ -96,6 +94,10 @@ onMounted(() => {
     loadingText.value = `Disconnected from server... Reconnecting... (${attempts}/${maxRetry})`
   })
 })
+
+onActivated(()=>{
+  console.log('activated')
+})
 const loadingText = ref('Disconnected from server... Reconnecting...')
 
 const defaultSymbol = Symbol('default')
@@ -110,21 +112,28 @@ const tabs: {
     render: getPlaceholder(114514)
   }
 }
-const currentTab = ref<string | symbol>(defaultSymbol)
+const currentTabId = ref<string | symbol>(defaultSymbol)
 
 const requireNewTab = (channel: number, isGroup: boolean) => {
   const name = isGroup ? `group:${channel}` : `user:${channel}`
   if (!tabs[name]) {
     tabs[name] = {
       isGroup,
-      render: getChatListOf(channel)
+      render: getChatListOf(channel, isGroup)
     }
+    console.log(`new tab: ${name}`)
   }
-  currentTab.value = name
+  currentTabId.value = name
 }
+
+const currentTab = computed(() => {
+  return tabs[currentTabId.value].render
+})
 
 const onGroupSelect = (group: any) => {
   requireNewTab(group.id, true) //TODO: this may not a group but a user
+  console.log(`selected group: ${group.id}`)
+  console.log(tabs)
 }
 
 </script>

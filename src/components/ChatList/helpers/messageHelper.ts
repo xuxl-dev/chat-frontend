@@ -602,7 +602,7 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
   conversationMap = new Map<number, Conversation>()
   socket: Socket
   user: { [key: string]: any } | undefined
-  maxRetry = 3
+  maxRetry = 1
   attempts = 0
 
   private config: BakaMessagerConfig
