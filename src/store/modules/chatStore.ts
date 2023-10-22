@@ -15,12 +15,13 @@ import { ACKUpdateLayer } from './ChatProcessors/ACKUpdateLayer'
 import EventEmitter from 'eventemitter3'
 import { Db, LocalMessage } from '@/utils/db'
 import { advancedDebounce } from '@/utils/debounce'
-import { Message } from '../../modules/advancedChat/base'
+import { Message, MessageFlag } from '../../modules/advancedChat/base'
 import {
   FunctionalLayer,
   registerFunctionalCb
 } from './ChatProcessors/FunctionalLayer'
 import { HeartBeatMsg } from '@/modules/advancedChat/decls/heartbeat'
+import useGroupStore from './groupStore'
 
 const useChatStore = defineStore('chatStore', () => {
   const server = ref('http://localhost:3001')
@@ -257,7 +258,7 @@ export class ChatSession extends EventEmitter {
   /**
    * @deprecated
    * Do not use this in production
-   *  */
+   */
   getRawChat() {
     return this.chat
   }
@@ -269,6 +270,26 @@ export class ChatSession extends EventEmitter {
   getConversation() {
     return this.conversation
   }
+}
+
+export function sendToCurrentSelectedSess(msg: Message) {
+  const selectedGrp = useGroupStore().selectedGroup
+  if (!selectedGrp) {
+    console.error(`selectedGrp is null`)
+    return
+  }
+
+  const receiverId = selectedGrp.id
+  const isGroup = selectedGrp.isGroup
+  if (msg.receiverId !== receiverId) {
+    console.warn(`msg.receiverId !== receiverId, override`)
+    msg.receiverId = receiverId
+  }
+  if (isGroup) {
+    msg.flag |= MessageFlag.BROADCAST
+  }
+  const sess = getChatSession(msg.receiverId)
+  sess.send(msg)
 }
 
 export default useChatStore

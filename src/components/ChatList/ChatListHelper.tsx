@@ -3,8 +3,7 @@ import ChatList from '@/components/ChatList/index.vue'
 export function formatChannelName(channel: number, isGroup: boolean) {
   if (isGroup) {
     return `group:${channel}`
-  }
-  else {
+  } else {
     return `user:${channel}`
   }
 }
