@@ -3,13 +3,16 @@ import { getFriends } from '@/apis/modules/user'
 import { defineStore } from 'pinia'
 import { ref, shallowRef, type Ref, computed } from 'vue'
 
-export class ChatGroup {
-  id: string
+export class ChatGroupDisplay {
+  id: number
   name: string
+  description: string
   avatar: string
-  desc: string
-  members: number[]
-  unread: number
+  allowAnyUserToJoin: boolean
+  isGroup: boolean
+  
+  members?: number[]
+  unread?: number
 
   constructor({
     id,
@@ -17,21 +20,24 @@ export class ChatGroup {
     avatar,
     desc,
     members,
-    unread
+    unread,
+    isGroup
   }: {
-    id: string
+    id: number
     name: string
     avatar: string
     desc: string
+    isGroup: boolean
     members?: number[]
     unread?: number
   }) {
     this.id = id
     this.name = name
     this.avatar = avatar
-    this.desc = desc
+    this.description = desc
     this.members = members || []
     this.unread = unread || 0
+    this.isGroup = isGroup
   }
 }
 
@@ -43,18 +49,38 @@ export async function initGroupStore() {
 export async function fetchGroups() {
   const grps = await getAllChatGroups()
   console.log(`grps:`, grps)
-  useGroupStore().rawGroups = grps
+  useGroupStore().rawGroups = grps.map((g) => {
+    return new ChatGroupDisplay({
+      id: g.id,
+      name: g.name,
+      avatar: g.avatar,
+      desc: g.description,
+      isGroup: true
+    })
+  })
 }
 
 export async function fetchFriends() {
   const users = await getFriends()
   console.log(`friends:`, users)
+  // here we regrad one user as group of two members(sender and receiver)
+  // only used for display!
+  const groups = users.map((u) => {
+    return new ChatGroupDisplay({
+      id: u.id,
+      name: u.username,
+      avatar: u.avatar,
+      desc: u.description,
+      isGroup: false
+    })
+  })
 
+  useGroupStore().rawGroups = useGroupStore().rawGroups.concat(groups)
 }
 
 const useGroupStore = defineStore('groupStore', () => {
-  const selectedGroup = ref<string | null>(null)
-  const rawGroups = ref<ChatGroup[]>([])
+  const selectedGroup = ref<ChatGroupDisplay | null>(null)
+  const rawGroups = ref<ChatGroupDisplay[]>([])
   const keyword = ref<string>('')
 
   const displayGroups = computed(() => {

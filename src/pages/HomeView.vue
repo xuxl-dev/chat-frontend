@@ -37,6 +37,7 @@ import { login } from '@/modules/auth/auth'
 import { initGroupStore } from '@/store/modules/groupStore';
 import getChatListOf from '@/components/ChatList/ChatListHelper';
 import { getPlaceholder } from '../components/ChatList/ChatListHelper';
+import { ChatGroupDisplay } from '../store/modules/groupStore';
 
 const { bkm } = useChatStore()
 
@@ -130,8 +131,8 @@ const currentTab = computed(() => {
   return tabs[currentTabId.value].render
 })
 
-const onGroupSelect = (group: any) => {
-  requireNewTab(group.id, true) //TODO: this may not a group but a user
+const onGroupSelect = (group: ChatGroupDisplay) => {
+  requireNewTab(group.id, group.isGroup)
   console.log(`selected group: ${group.id}`)
   console.log(tabs)
 }

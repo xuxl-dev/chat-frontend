@@ -13,13 +13,13 @@
 </template>
 
 <script setup lang="ts">
-import groupStore, { ChatGroup } from '@/store/modules/groupStore'
+import groupStore, { ChatGroupDisplay } from '@/store/modules/groupStore'
 import { computed } from 'vue';
 import bus from '../../../utils/EventBus';
 
 const props = defineProps({
   group: {
-    type: Object as () => ChatGroup,
+    type: Object as () => ChatGroupDisplay,
     required: true
   }
 })
@@ -33,7 +33,7 @@ const avatar = computed(() => {
 })
 
 function chooseGroup() {
-  groupstore.selectedGroup = props.group.id
+  groupstore.selectedGroup = props.group
   emit('selectGroup', props.group.id)
   bus.emit('selectGroup', props.group.id)
 }
@@ -41,32 +41,4 @@ function chooseGroup() {
 
 </script>
 
-<style scoped>
-/* .oneGroup {
-  width: 100%;
-  height: 60px;
-  padding: 10px;
-}
-
-.oneGroup:hover {
-  width: 100%;
-  height: 60px;
-  padding: 10px;
-  background-color: #e9e9eb;
-}
-.picture {
-  display: inline-block;
-  width: 20%;
-}
-
-.name {
-  display: inline-block;
-  width: 70%;
-  padding-left: 20px;
-}
-
-.number {
-  display: inline-block;
-  width: 10%;
-} */
-</style>
+<style scoped></style>
