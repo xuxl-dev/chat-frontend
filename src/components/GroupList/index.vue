@@ -4,12 +4,13 @@
       <searchbar />
     </div>
     <div class="addGroup">
-      <el-button type="primary" :icon="Plus" circle @click="addgroup()" />
+      <el-button type="primary" :icon="Plus" circle @click="showAddGroup()" />
     </div>
   </div>
   <div class="grpTable">
     <Group :group="group" v-for="(group, i) in store.groups" :key="i"></Group>
   </div>
+  <addGroup v-model:dialogVisible="dialogVisible" dialogTitle="添加群" />
 </template>
 
 <script setup lang="ts">
@@ -18,8 +19,13 @@ import Group from './component/group.vue'
 import groupStore from '@/store/modules/groupStore'
 import searchbar from './component/header/searchbar.vue'
 import { Plus } from '@element-plus/icons-vue'
+import addGroup from './component/header/addGroup.vue'
 
-function addgroup() {}
+const dialogVisible = ref(false)
+function showAddGroup() {
+  dialogVisible.value = true
+  console.log(dialogVisible.value)
+}
 
 const store = groupStore()
 </script>
