@@ -40,7 +40,7 @@ function findFlagsByValue(value: number): string[] {
   return flags
 }
 
-const messageToken = 'message'
+const messageToken = 'msg'
 export class MessageHelper {
   server_addr: string
   port: number
@@ -88,7 +88,7 @@ export class MessageHelper {
   }
 
   async message(msg: Message) {
-    this._socket?.emit('message', msg)
+    this._socket?.emit(messageToken, msg)
   }
 
   async quickMessage(content: object, msgFlag: number, to) {
@@ -632,7 +632,7 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
 
   quickMessage(content: object, flag: MessageFlag, to: number) {
     this.socket.emit(
-      'message',
+      messageToken,
       Message.new({
         receiverId: to,
         content: content,
@@ -646,7 +646,7 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
       return () => {
         console.log('sending message: ', msg, ' to ', msg.receiverId)
         return new Promise<Message>((resolve, reject) => {
-          this.socket.emit('message', msg, (ret: Message) => {
+          this.socket.emit(messageToken, msg, (ret: Message) => {
             console.log('message ret: ', ret)
             resolve(ret as Message)
           })
@@ -709,7 +709,7 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
           pq.add(async () => await this.tryReconnect())
         })
 
-        this.socket.on('message', (msg: object) => {
+        this.socket.on('msg', (msg: object) => {
           const parsed = Message.parse(msg)
           this.handleMessage(parsed)
         })
