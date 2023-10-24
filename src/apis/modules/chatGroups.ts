@@ -1,4 +1,6 @@
+import type { ChatGroup } from '@/decls/ChatGroup'
 import { defHttp } from '../ajax'
+
 
 const prefix = 'chatgroup/'
 
@@ -8,7 +10,8 @@ enum chatGroupApi {
   addAdmin = 'add-admin',
   all = 'all',
   join = 'join',
-  getGroupMembers = 'members'
+  getGroupMembers = 'members',
+  myGroups = 'my-groups',
 }
 
 export async function createChatGroup(createChatGroupDto: {
@@ -78,5 +81,11 @@ export async function getGroupMembers(groupId: number): Promise<any> {
 export async function getGroup(groupId: number): Promise<any> {
   const ret = (await defHttp.post(prefix + groupId)).data
 
+  return ret
+}
+
+
+export async function getMyGroups(): Promise<ChatGroup[]> {
+  const ret = (await defHttp.post(prefix + chatGroupApi.myGroups)).data
   return ret
 }

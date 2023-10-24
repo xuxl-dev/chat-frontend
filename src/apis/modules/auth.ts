@@ -1,5 +1,6 @@
-import type { User } from '@/components/ChatList/ChatMessage'
+
 import { defHttp } from '../ajax'
+import { User } from '@/decls/user';
 
 const prefix = 'auth/'
 
