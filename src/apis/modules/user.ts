@@ -1,4 +1,4 @@
-import type { User } from '@/components/ChatList/ChatMessage'
+
 import { defHttp } from '../ajax'
 
 const prefix = 'user/'
@@ -13,3 +13,4 @@ export async function getFriends(): Promise<any> {
 
   return ret
 }
+
