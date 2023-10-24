@@ -32,11 +32,12 @@
 
 <script setup lang="ts">
 import { ref, computed, type Ref } from 'vue';
-import { MessageWarp, User } from './ChatMessage';
+import { MessageWarp } from './ChatMessage';
 import Checked from './icons/Checked.vue';
 import DoubleChecked from './icons/DoubleChecked.vue';
 import CircleChecked from './icons/CircleChecked.vue';
 import useChatStore from '@/store/modules/chatStore';
+import { User } from '@/decls/user';
 
 const store = useChatStore()
 const msgRef = ref<HTMLElement | null>(null)

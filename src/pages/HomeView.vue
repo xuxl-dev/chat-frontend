@@ -15,12 +15,14 @@
         <button @click="send">send</button> <br>
         <button @click="sendE2ee">sendE2ee</button> <br>
         <button @click="switchUser">switch user</button> <br>
-        <button @click="console.log(getChatSession(useChatStore().me.id === 1 ? 2 : 1).getRawChat())">log chat</button>
+        <button
+          @click="console.log(getChatSession(useChatStore().me.id === 1 ? 2 : 1, useGroupStore().selectedGroup.isGroup).getRawChat())">log
+          chat</button>
         <br>
         <!-- <button @click="showDb">Show DB</button> <br>
         <button @click="clearDB">Clear DB</button> <br> -->
         <button @click="establishE2ee">E2EE</button> <br>
-        <button @click="getChatSession(useChatStore().me.id === 1 ? 2 : 1).heartBeat()">HeartBeat</button> <br>
+        <button @click="getChatSession(useChatStore().me.id === 1 ? 2 : 1, false).heartBeat()">HeartBeat</button> <br>
       </div>
     </main>
   </div>
@@ -34,7 +36,7 @@ import Dexie from 'dexie';
 import { Message, MessageFlag } from '../modules/advancedChat/base';
 import GroupList from '@/components/GroupList/GroupList.vue';
 import { login } from '@/modules/auth/auth'
-import { initGroupStore } from '@/store/modules/groupStore';
+import useGroupStore, { initGroupStore } from '@/store/modules/groupStore';
 import getChatListOf from '@/components/ChatList/ChatListHelper';
 import { getPlaceholder } from '../components/ChatList/ChatListHelper';
 import { ChatGroupDisplay } from '../store/modules/groupStore';
@@ -53,13 +55,13 @@ const msg = ref('Lorem ipsum')
 const send = () => {
   const me = useChatStore().me
   const to = me.id === 1 ? 2 : 1
-  getChatSession(to).send(new Message().from(me.id).text(msg.value))
+  getChatSession(to, useGroupStore().selectedGroup.isGroup).send(new Message().from(me.id).text(msg.value))
 }
 
 const sendE2ee = () => {
   const me = useChatStore().me
   const to = me.id === 1 ? 2 : 1
-  getChatSession(to).send(new Message().from(me.id).text(msg.value).withFlag(MessageFlag.E2EE))
+  getChatSession(to, useGroupStore().selectedGroup.isGroup).send(new Message().from(me.id).text(msg.value).withFlag(MessageFlag.E2EE))
 }
 
 const switchUser = async () => {
@@ -79,7 +81,7 @@ const clearDB = async () => {
 const establishE2ee = async () => {
   const me = useChatStore().me
   const to = me.id === 1 ? 2 : 1
-  await getChatSession(to).getConversation().enableE2EE()
+  await getChatSession(to, useGroupStore().selectedGroup.isGroup).getConversation().enableE2EE()
 }
 
 let isConnected = ref(false)
@@ -96,7 +98,7 @@ onMounted(() => {
   })
 })
 
-onActivated(()=>{
+onActivated(() => {
   console.log('activated')
 })
 const loadingText = ref('Disconnected from server... Reconnecting...')

@@ -1,4 +1,4 @@
-import { MessageWarp, User } from '@/components/ChatList/ChatMessage'
+import { MessageWarp } from '@/components/ChatList/ChatMessage'
 import {
   BakaMessager,
   Conversation
@@ -9,19 +9,22 @@ import {
   BeginProcessorLayer,
   EndProcessorLayer,
   ProcessEndException,
+  ProcessError,
   type ProcessorLayer
 } from './ChatProcessors/base'
 import { ACKUpdateLayer } from './ChatProcessors/ACKUpdateLayer'
 import EventEmitter from 'eventemitter3'
 import { Db, LocalMessage } from '@/utils/db'
 import { advancedDebounce } from '@/utils/debounce'
-import { Message, MessageFlag } from '../../modules/advancedChat/base'
+import { Message, MessageFlag, isFlagSet } from '../../modules/advancedChat/base'
 import {
   FunctionalLayer,
   registerFunctionalCb
 } from './ChatProcessors/FunctionalLayer'
 import { HeartBeatMsg } from '@/modules/advancedChat/decls/heartbeat'
 import useGroupStore from './groupStore'
+import { formatChannelName } from '@/components/ChatList/ChatListHelper'
+import { User } from '../../decls/user';
 
 const useChatStore = defineStore('chatStore', () => {
   const server = ref('http://localhost:3001')
@@ -39,16 +42,24 @@ const useChatStore = defineStore('chatStore', () => {
   }
 })
 
-const sesses: Map<number, ChatSession> = new Map()
+const sesses: Map<string, ChatSession> = new Map()
 
 export async function updateConversation(raw: Message) {
-  if (sesses.has(raw.senderId)) {
-    sesses.get(raw.senderId).notify(raw)
+  if (isFlagSet(MessageFlag.BROADCAST, raw)) {
+    const conversation = getChatSession(raw.receiverId, true)
+    await conversation.notify(raw)
   } else {
-    const conversation = new ChatSession(raw.senderId) //TODO distinguish group and private message here
-    sesses.set(raw.senderId, conversation)
+    const conversation = getChatSession(raw.senderId, false)
     await conversation.notify(raw)
   }
+
+  // if (sesses.has(raw.senderId)) {
+  //   sesses.get(raw.senderId).notify(raw)
+  // } else {
+  //   const conversation = new ChatSession(raw.senderId) //TODO distinguish group and private message here
+  //   sesses.set(raw.senderId, conversation)
+  //   await conversation.notify(raw)
+  // }
 }
 
 const db = Db.instance()
@@ -63,11 +74,12 @@ const SyncMsg = async (msg: Message) => {
 
 export const debounceSyncMsg = advancedDebounce(SyncMsg, 500, 1000)
 
-export function getChatSession(id: number) {
-  if (!sesses.has(id)) {
-    sesses.set(id, new ChatSession(id))
+export function getChatSession(id: number, isGroup: boolean) {
+  const name = formatChannelName(id, isGroup)
+  if (!sesses.has(name)) {
+    sesses.set(name, new ChatSession(id, isGroup))
   }
-  return sesses.get(id)!
+  return sesses.get(name)!
 }
 
 export class ChatSession extends EventEmitter {
@@ -75,12 +87,14 @@ export class ChatSession extends EventEmitter {
    * the receiver id
    */
   readonly bindingGroup: number
+  readonly isGroup: boolean
   private conversation: Conversation
 
-  constructor(bindingGroup: number) {
+  constructor(bindingGroup: number, isGroup: boolean) {
     super()
     this.bindingGroup = bindingGroup
-    this.conversation = useChatStore().bkm.getConversation(bindingGroup)
+    this.isGroup = isGroup
+    this.conversation = useChatStore().bkm.getConversation(bindingGroup, isGroup)
     this.initProcessors()
     this.setNexts()
   }
@@ -127,11 +141,12 @@ export class ChatSession extends EventEmitter {
       await this.processors[0].process(msg)
     } catch (e) {
       if (e instanceof ProcessEndException) {
-        console.log('ProcessEndException', e, `dropped`, msg)
         return // this is normal
-      } else {
-        throw e
+      } else if (e instanceof ProcessError) {
+        console.log('ProcessEndError', e, `dropped`, msg)
+        return
       }
+      throw e // this is not normal
     }
     // this is a processed message, and shall display
     // this.chat.value.push(MessageWarp.fromMessage(msg))
@@ -288,7 +303,7 @@ export function sendToCurrentSelectedSess(msg: Message) {
   if (isGroup) {
     msg.flag |= MessageFlag.BROADCAST
   }
-  const sess = getChatSession(msg.receiverId)
+  const sess = getChatSession(msg.receiverId, isGroup)
   sess.send(msg)
 }
 

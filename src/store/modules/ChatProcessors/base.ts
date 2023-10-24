@@ -58,3 +58,9 @@ export class ProcessEndException extends Error {
     super('Process end')
   }
 }
+
+export class ProcessError extends Error {
+  constructor() {
+    super('Process error')
+  }
+}

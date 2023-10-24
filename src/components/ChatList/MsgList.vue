@@ -19,6 +19,10 @@ const props = defineProps({
   channel: {
     type: Number,
     required: true
+  },
+  isGroup: {
+    type: Boolean,
+    required: true
   }
 })
 
@@ -155,37 +159,12 @@ onMounted(() => {
     return
   }
   hasInit = true
-  currentSession = getChatSession(props.channel)
+  currentSession = getChatSession(props.channel, props.isGroup)
   isLoading = currentSession.isLoading
   currentSession.on('new-message', (warp: Ref<MessageWarp>) => {
     insertMessage(warp.value)
   })
 })
-// watch(() => props.channel, (newVal, oldVal) => {
-//   console.log('channel changed', newVal, oldVal)
-// }, { immediate: true })
-// on prop channel change
-// watch(() => props.channel, (newVal, oldVal) => {
-//   currentSession = getChatSession(newVal)
-//   isLoading = currentSession.isLoading
-//   currentSession.on('new-message', (warp: Ref<MessageWarp>) => {
-//     // if (warp.value._msg.sentAt < source.value[0].messages[0].value._msg.sentAt) {
-//     //   source.value.unshift(reactive(new StackedMessage([warp])))
-//     //   return
-//     // }
-//     // const lst = lastStack()
-//     // if (lst && lst.sender.id === warp.value.sender.id) {
-//     //   lst.append(warp)
-//     //   return
-//     // }
-//     // source.value.push(reactive(new StackedMessage([warp])))
-//     insertMessage(warp.value)
-//     // currentSession.mostEarlyMsgId.value = firstStack()?.messages.at(0)?.value?.id ?? null
-//     // currentSession.mostLateMsgId.value = lastStack()?.messages.at(-1)?.value?.id ?? null
-//   })
-
-//   oldVal && getChatSession(oldVal).off('new-message')
-// }, { immediate: true })
 
 const lastStack = () => {
   return source.value.at(-1)

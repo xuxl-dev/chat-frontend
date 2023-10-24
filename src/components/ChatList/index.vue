@@ -1,6 +1,6 @@
 <template>
   Channel::{{ channel }}, isGroup::{{ isGroup }}
-  <MsgList class="scroller" ref="msglistRef" :channel="channel" />
+  <MsgList class="scroller" ref="msglistRef" :channel="channel" :is-group="isGroup" />
 </template>
 
 <script lang="ts" setup>

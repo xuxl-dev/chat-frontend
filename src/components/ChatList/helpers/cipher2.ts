@@ -105,7 +105,7 @@ export class Cipher2 {
     this.peerPublicKey = null
   }
 
-  public async init(isPassive = false) {
+  public async init() {
     this.myRSAKeyPair = await run(generateRSAKeyPair)
     this.myAESKey = await run(generateAESKey)
     this.hasInit = true

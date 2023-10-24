@@ -81,7 +81,7 @@ const constant_events = {
   HEARTBEAT: {
     once: false,
     cb: async (msg: Message) => {
-      await getChatSession(msg.senderId).sendRaw(
+      await getChatSession(msg.senderId, false).sendRaw(
         new Message(
           HeartBeatMsg.new({
             receiverId: msg.senderId,

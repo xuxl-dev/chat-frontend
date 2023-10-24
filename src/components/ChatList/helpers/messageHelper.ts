@@ -12,6 +12,7 @@ import {
   isFlagSet
 } from '../../../modules/advancedChat/base'
 import { getToken } from '@/modules/auth/auth'
+import { formatChannelName } from '../ChatListHelper'
 
 export function getMessageStr(msg: Message) {
   //this is dirty
@@ -308,7 +309,7 @@ export class Conversation extends EventEmitter {
   async enableE2EE() {
     this.ctx['isE2eePassive'] = false
     if (!this.cipher.hasInit) {
-      await this.cipher.init(this.ctx['isE2eePassive'])
+      await this.cipher.init()
     }
     const pubkey = await this.cipher.getMyPublicKey()
     await this.send(
@@ -434,7 +435,7 @@ class E2EEMessageReceiver implements MessageHandler {
       this.ctx.rsaPublicKey = content.rsaPublicKey
       // send my rsa public key, and encrypted my aes key with the other side's rsa public key
       if (!this.cipher.hasInit) {
-        await this.cipher.init(this.ctx[isE2eePassiveToken])
+        await this.cipher.init()
       }
       // console.log(`@content`, content)
       await this.cipher.setPeerPublicKey(
@@ -599,7 +600,7 @@ type BakaMessagerConfig = {
 const pq = new PQueue({ concurrency: 1 }) //FIXME dont know why this should be outside of class
 
 export class BakaMessager extends EventEmitter implements IMessageHelper {
-  conversationMap = new Map<number, Conversation>()
+  conversationMap = new Map<string, Conversation>()
   socket: Socket
   user: { [key: string]: any } | undefined
   maxRetry = 1
@@ -719,33 +720,39 @@ export class BakaMessager extends EventEmitter implements IMessageHelper {
   }
 
   private handleMessage(msg: Message) {
-    if (!this.conversationMap.has(msg.senderId)) {
-      this.newConversation(msg.senderId)
+    const isGroup = isFlagSet(MessageFlag.BROADCAST, msg)
+    const fmt = formatChannelName(msg.senderId, isFlagSet(MessageFlag.BROADCAST, msg))
+    console.log(`received message: ${fmt}`)
+    if (!this.conversationMap.has(fmt)) {
+      this.newConversation(msg.senderId, isGroup)
     }
-    this.conversationMap.get(msg.senderId).notify(msg)
+    this.conversationMap.get(fmt).notify(msg)
   }
 
-  private newConversation(senderId: number) {
-    console.log(`new conversation with ${senderId}`)
+  private newConversation(senderId: number, isGroup: boolean) {
     const newConversation = new Conversation(senderId, this)
     InjectDefaultPipeline(newConversation)
-    this.conversationMap.set(senderId, newConversation)
+    const fmt = formatChannelName(senderId, isGroup)
+    console.log(`new conversation with ${fmt}`)
+    this.conversationMap.set(fmt, newConversation)
   }
 
+  /**
+   * Can only establish E2EE to a single user
+   * @param to 
+   */
   async establishE2EE(to: number) {
-    if (!this.conversationMap.get(to)) {
-      this.newConversation(to)
-    }
-    const conversation = this.conversationMap.get(to)
-    await this.cipher.init(false)
+    const conversation = this.getConversation(to, false)
+    await this.cipher.init()
     await conversation.enableE2EE()
   }
 
-  public getConversation(id: number): Conversation {
-    if (!this.conversationMap.has(id)) {
-      this.newConversation(id)
+  public getConversation(id: number, isGroup: boolean): Conversation {
+    const fmt = formatChannelName(id, isGroup)
+    if (!this.conversationMap.has(fmt)) {
+      this.newConversation(id, isGroup)
     }
-    return this.conversationMap.get(id)
+    return this.conversationMap.get(fmt)
   }
 
   _status: 'connected' | 'disconnected' | 'connecting' = 'disconnected'
