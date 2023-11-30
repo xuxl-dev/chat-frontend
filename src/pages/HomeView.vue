@@ -16,7 +16,7 @@
         <button @click="sendE2ee">sendE2ee</button> <br>
         <button @click="switchUser">switch user</button> <br>
         <button
-          @click="console.log(getChatSession(useChatStore().me.id === 1 ? 2 : 1, useGroupStore().selectedGroup.isGroup).getRawChat())">log
+          @click="console.log(getChatSession(useChatStore().me.id === 1 ? 2 : 1, grpStore.selectedGroup.isGroup).getRawChat())">log
           chat</button>
         <br>
         <!-- <button @click="showDb">Show DB</button> <br>
@@ -41,32 +41,33 @@ import getChatListOf from '@/components/ChatList/ChatListHelper';
 import { getPlaceholder } from '../components/ChatList/ChatListHelper';
 import { ChatGroupDisplay } from '../store/modules/groupStore';
 
-const { bkm } = useChatStore()
+const store = useChatStore()
+const grpStore = useGroupStore()
 
 onMounted(async () => {
   const usr = await login("admin", "admin")
   console.log(usr)
-  await bkm.init(usr.jwt)
+  await store.bkm.init(usr.jwt)
   initGroupStore()
 })
 
 const msg = ref('Lorem ipsum')
 
 const send = () => {
-  const me = useChatStore().me
+  const me = store.me
   const to = me.id === 1 ? 2 : 1
-  getChatSession(to, useGroupStore().selectedGroup.isGroup).send(new Message().from(me.id).text(msg.value))
+  getChatSession(to, grpStore.selectedGroup.isGroup).send(new Message().from(me.id).text(msg.value))
 }
 
 const sendE2ee = () => {
-  const me = useChatStore().me
+  const me = store.me
   const to = me.id === 1 ? 2 : 1
-  getChatSession(to, useGroupStore().selectedGroup.isGroup).send(new Message().from(me.id).text(msg.value).withFlag(MessageFlag.E2EE))
+  getChatSession(to, grpStore.selectedGroup.isGroup).send(new Message().from(me.id).text(msg.value).withFlag(MessageFlag.E2EE))
 }
 
 const switchUser = async () => {
   const usr = await login("user", "user", true)
-  await bkm.init(usr.jwt)
+  await store.bkm.init(usr.jwt)
   initGroupStore()
 }
 
@@ -79,17 +80,17 @@ const clearDB = async () => {
 }
 
 const establishE2ee = async () => {
-  const me = useChatStore().me
+  const me = store.me
   const to = me.id === 1 ? 2 : 1
-  await getChatSession(to, useGroupStore().selectedGroup.isGroup).getConversation().enableE2EE()
+  await getChatSession(to, grpStore.selectedGroup.isGroup).getConversation().enableE2EE()
 }
 
 let isConnected = ref(false)
 onMounted(() => {
-  useChatStore().bkm.on('status', (status) => {
+  store.bkm.on('status', (status) => {
     isConnected.value = status !== 'connected'
-    const attempts = useChatStore().bkm.attempts
-    const maxRetry = useChatStore().bkm.maxRetry
+    const attempts = store.bkm.attempts
+    const maxRetry = store.bkm.maxRetry
     if (attempts === maxRetry) {
       loadingText.value = `Failed to connect to server. Please refresh the page.`
       return
